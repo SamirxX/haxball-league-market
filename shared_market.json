@@ -2,19 +2,19 @@
     {
         "id": 1,
         "num": 1,
-        "name": "kaka",
+        "name": "ass",
         "club": "Apex Predators",
         "pos": "ST",
-        "price": 15000000,
+        "price": 10.3,
         "status": "Signed"
     },
     {
         "id": 2,
         "num": 2,
-        "name": "lamine",
-        "club": "Shadow Strikers",
+        "name": "belli gooal",
+        "club": "\u0641\u0631\u064a\u0642 \u0627\u0644\u0628\u0644\u0627\u0628\u0644",
         "pos": "CM",
-        "price": 12500000,
+        "price": 100000,
         "status": "Signed"
     },
     {
@@ -23,7 +23,7 @@
         "name": "WallKeeper",
         "club": "Titan FC",
         "pos": "GK",
-        "price": 9000000,
+        "price": 28.5,
         "status": "Signed"
     },
     {
@@ -32,7 +32,7 @@
         "name": "ViperKing",
         "club": "Viper United",
         "pos": "ST",
-        "price": 11000000,
+        "price": 20.2,
         "status": "Signed"
     },
     {
@@ -41,7 +41,7 @@
         "name": "CyberSniper",
         "club": "Cyber Knights",
         "pos": "DM",
-        "price": 8500000,
+        "price": 20.4,
         "status": "Signed"
     },
     {
@@ -50,7 +50,7 @@
         "name": "GhostFreek",
         "club": "Apex Predators",
         "pos": "DM",
-        "price": 10000000,
+        "price": 54.2,
         "status": "Signed"
     },
     {
@@ -59,7 +59,7 @@
         "name": "BlazeRider",
         "club": "Shadow Strikers",
         "pos": "ST",
-        "price": 14000000,
+        "price": 31.3,
         "status": "Signed"
     },
     {
@@ -68,7 +68,7 @@
         "name": "IronShield",
         "club": "Titan FC",
         "pos": "CB",
-        "price": 7500000,
+        "price": 21.8,
         "status": "Signed"
     },
     {
@@ -77,7 +77,7 @@
         "name": "ZeroMatrix",
         "club": "Free Agent",
         "pos": "CM",
-        "price": 6000000,
+        "price": 31.1,
         "status": "Free Agent"
     },
     {
@@ -86,7 +86,7 @@
         "name": "NeonFlash",
         "club": "Viper United",
         "pos": "GK",
-        "price": 8000000,
+        "price": 19.4,
         "status": "Signed"
     },
     {
@@ -95,7 +95,7 @@
         "name": "AlphaWolf",
         "club": "Cyber Knights",
         "pos": "ST",
-        "price": 13500000,
+        "price": 9.9,
         "status": "Signed"
     },
     {
@@ -104,7 +104,7 @@
         "name": "PixelGod",
         "club": "Apex Predators",
         "pos": "CM",
-        "price": 11500000,
+        "price": 23.9,
         "status": "Signed"
     },
     {
@@ -113,7 +113,7 @@
         "name": "Phantom99",
         "club": "Free Agent",
         "pos": "ST",
-        "price": 5500000,
+        "price": 40.2,
         "status": "Free Agent"
     },
     {
@@ -122,7 +122,7 @@
         "name": "TurboShot",
         "club": "Shadow Strikers",
         "pos": "CB",
-        "price": 9200000,
+        "price": 5.3,
         "status": "Signed"
     },
     {
@@ -131,7 +131,7 @@
         "name": "AeroWing",
         "club": "Titan FC",
         "pos": "ST",
-        "price": 10500000,
+        "price": 19.2,
         "status": "Signed"
     },
     {
@@ -140,7 +140,7 @@
         "name": "VortexDM",
         "club": "Viper United",
         "pos": "DM",
-        "price": 7800000,
+        "price": 29.1,
         "status": "Signed"
     },
     {
@@ -149,7 +149,7 @@
         "name": "TitaniumGK",
         "club": "Cyber Knights",
         "pos": "GK",
-        "price": 8800000,
+        "price": 8.5,
         "status": "Signed"
     },
     {
@@ -158,7 +158,7 @@
         "name": "SonicBounce",
         "club": "Free Agent",
         "pos": "CM",
-        "price": 4800000,
+        "price": 13.1,
         "status": "Free Agent"
     },
     {
@@ -167,7 +167,7 @@
         "name": "HyperDash",
         "club": "Apex Predators",
         "pos": "CB",
-        "price": 9800000,
+        "price": 12.2,
         "status": "Signed"
     },
     {
@@ -176,7 +176,7 @@
         "name": "Overdrive",
         "club": "Shadow Strikers",
         "pos": "DM",
-        "price": 10200000,
+        "price": 10,
         "status": "Signed"
     }
 ]
