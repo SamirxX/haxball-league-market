@@ -16,6 +16,7 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 SHARED_MARKET_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shared_market.json')
+GITHUB_PAGES_URL = "https://samirxx.github.io/haxball-league-market/players_market.html"
 
 def load_shared_market():
     if os.path.exists(SHARED_MARKET_FILE):
@@ -38,7 +39,7 @@ def is_leader(user):
         if user.guild_permissions.administrator:
             return True
         role_names = [r.name.lower() for r in user.roles]
-        if any(keyword in role_names for keyword in ['leader', 'admin', 'administrator', 'mod', 'manager', 'co-leader']):
+        if any(keyword in role_names for keyword in ['leader', 'admin', 'administrator', 'mod', 'manager', 'co-leader', 'owner']):
             return True
     return False
 
@@ -83,61 +84,81 @@ def build_market_embeds():
         embeds.append(embed)
     return embeds
 
-async def update_channel_market(channel):
-    if not channel:
-        return
+async def update_unified_market_channel(guild):
+    # Single #market channel for everyone
+    market_ch = discord.utils.get(guild.text_channels, name="market") or \
+                discord.utils.get(guild.text_channels, name="transfer-market")
+    if not market_ch:
+        market_ch = await guild.create_text_channel("market")
+
     embeds = build_market_embeds()
-    
-    # Try to edit existing messages if bot posted them, or purge and resend clean
-    bot_msgs = []
-    async for msg in channel.history(limit=20):
+
+    # Clean old bot messages and re-post clean link + market
+    async for msg in market_ch.history(limit=20):
         if msg.author == bot.user:
-            bot_msgs.append(msg)
-    
-    bot_msgs.reverse() # chronological
-    
-    if len(bot_msgs) == len(embeds):
-        for msg, emb in zip(bot_msgs, embeds):
-            await msg.edit(embed=emb)
-    else:
-        # Purge bot messages and resend fresh
-        for msg in bot_msgs:
             try:
                 await msg.delete()
             except Exception:
                 pass
-        for emb in embeds:
-            await channel.send(embed=emb)
 
-async def auto_sync_all_markets(guild):
-    # Public channel everyone can see
-    public_ch = discord.utils.get(guild.text_channels, name="transfer-market") or \
-                discord.utils.get(guild.text_channels, name="market")
-    if not public_ch:
-        public_ch = await guild.create_text_channel("transfer-market")
+    # Post link header
+    header_msg = f"🌐 **LIVE INTERACTIVE MARKET WEB LINK:**\n<{GITHUB_PAGES_URL}>\n\n*(Passcode for Leaders: `PRIM-LEADER-2026`)*\n👇 **LIVE TRANSFER MARKET TABLE (Auto-Refreshes Below):**"
+    await market_ch.send(header_msg)
 
-    # Leaders only channel
-    leader_ch = discord.utils.get(guild.text_channels, name="leader-commands") or \
-                discord.utils.get(guild.text_channels, name="leaders-market")
-    if not leader_ch:
-        # Create private leaders channel
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        for role in guild.roles:
-            if any(k in role.name.lower() for k in ['leader', 'admin', 'administrator', 'mod', 'manager', 'co-leader']):
-                overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        leader_ch = await guild.create_text_channel("leader-commands", overwrites=overwrites)
+    # Post embedded tables
+    for emb in embeds:
+        await market_ch.send(embed=emb)
 
-    await update_channel_market(public_ch)
-    await update_channel_market(leader_ch)
+async def setup_leader_headquarters(guild):
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=False, view_channel=False),
+        guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, view_channel=True)
+    }
+    for role in guild.roles:
+        if any(k in role.name.lower() for k in ['leader', 'admin', 'administrator', 'mod', 'manager', 'co-leader', 'owner']):
+            overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True, view_channel=True)
+
+    cat = discord.utils.get(guild.categories, name="👑 LEADER HEADQUARTERS")
+    if not cat:
+        cat = await guild.create_category("👑 LEADER HEADQUARTERS", overwrites=overwrites)
+
+    # 1. #leader-commands
+    cmd_ch = discord.utils.get(guild.text_channels, name="leader-commands")
+    if not cmd_ch:
+        cmd_ch = await guild.create_text_channel("leader-commands", category=cat, sync_permissions=True)
+    else:
+        await cmd_ch.edit(category=cat, sync_permissions=True)
+
+    # 2. #leader-commands-list (Manual)
+    guide_ch = discord.utils.get(guild.text_channels, name="leader-commands-list")
+    if not guide_ch:
+        guide_ch = await guild.create_text_channel("leader-commands-list", category=cat, sync_permissions=True)
+    else:
+        await guide_ch.edit(category=cat, sync_permissions=True)
+
+    # Post updated guide
+    async for msg in guide_ch.history(limit=5):
+        if msg.author == bot.user:
+            break
+    else:
+        embed = discord.Embed(
+            title="👑 **OFFICIAL LEADER & ADMIN COMMANDS MANUAL**",
+            description="Use these commands in `#leader-commands` to update the market 24/7. All changes automatically update `#market`!",
+            color=0x9B59B6
+        )
+        embed.add_field(name="1️⃣ `!addplayer <Name> <Pos> <Club> <PriceInM>`", value="Add a player to the market. Example: `!addplayer Ronaldo ST Zamalek 15`", inline=False)
+        embed.add_field(name="2️⃣ `!setprice <PlayerName> <NewPriceInM>`", value="Update player price. Example: `!setprice ibra 20`", inline=False)
+        embed.add_field(name="3️⃣ `!setclub <PlayerName> <NewClub>`", value="Transfer player to club. Example: `!setclub Messi Petrojet`", inline=False)
+        embed.add_field(name="4️⃣ `!createteam <TeamName> <CaptainName>`", value="Create team card & private team chat channel! Example: `!createteam RealMadrid Samir`", inline=False)
+        embed.add_field(name="5️⃣ `!market`", value="Manually print current market table.", inline=False)
+        embed.set_footer(text="Leader Passcode Key for Web Page: PRIM-LEADER-2026")
+        await guide_ch.send(embed=embed)
 
 POSITIONS_CONFIG = {
-    "ST": {"emoji": "⚽", "name": "ST", "color": discord.Color.red(), "desc": "Striker / Attacker"},
-    "CM": {"emoji": "🧙‍♂️", "name": "CM", "color": discord.Color.green(), "desc": "Central Midfielder"},
-    "CB": {"emoji": "🧱", "name": "CB", "color": discord.Color.blue(), "desc": "Center Back / Defender"},
-    "GK": {"emoji": "🧤", "name": "GK", "color": discord.Color.gold(), "desc": "Goalkeeper"}
+    "ST": {"emoji": "⚽", "name": "ST", "color": discord.Color.red()},
+    "CM": {"emoji": "🧙‍♂️", "name": "CM", "color": discord.Color.green()},
+    "CB": {"emoji": "🧱", "name": "CB", "color": discord.Color.blue()},
+    "GK": {"emoji": "🧤", "name": "GK", "color": discord.Color.gold()}
 }
 
 class PositionButton(discord.ui.Button):
@@ -158,11 +179,7 @@ class PositionButton(discord.ui.Button):
 
         role = discord.utils.get(guild.roles, name=role_name)
         if not role:
-            role = await guild.create_role(
-                name=role_name,
-                color=self.pos_data["color"],
-                mentionable=True
-            )
+            role = await guild.create_role(name=role_name, color=self.pos_data["color"], mentionable=True)
 
         if role in member.roles:
             await member.remove_roles(role)
@@ -177,9 +194,9 @@ class PositionRoleView(discord.ui.View):
         for p_key, p_data in POSITIONS_CONFIG.items():
             self.add_item(PositionButton(p_key, p_data))
 
-async def create_roles_and_teams_auto(guild):
-    roles_ch = discord.utils.get(guild.text_channels, name="roles") or \
-               discord.utils.get(guild.text_channels, name="position-roles")
+async def setup_roles_and_teams(guild):
+    # Roles channel with multi-selection
+    roles_ch = discord.utils.get(guild.text_channels, name="roles")
     if not roles_ch:
         roles_ch = await guild.create_text_channel("roles")
 
@@ -193,57 +210,25 @@ async def create_roles_and_teams_auto(guild):
     else:
         embed = discord.Embed(
             title="⚽ **Select Your Position(s)!**",
-            description=(
-                "Click the buttons below to choose your Haxball positions (**Select more than one!**):\n\n"
-                "⚽ = **ST** (Striker)\n"
-                "🧙‍♂️ = **CM** (Central Midfielder)\n"
-                "🧱 = **CB** (Center Back / Defender)\n"
-                "🧤 = **GK** (Goalkeeper)\n\n"
-                "*Click any position button to toggle it on or off.*"
-            ),
+            description="Click the buttons below to pick your positions (**You can select more than one!**):\n\n⚽ = **ST**\n🧙‍♂️ = **CM**\n🧱 = **CB**\n🧤 = **GK**",
             color=discord.Color.gold()
         )
-        embed.set_footer(text="Skill Issue Prim League | Multi-Position Selection")
-        view = PositionRoleView()
-        await roles_ch.send(embed=embed, view=view)
+        await roles_ch.send(embed=embed, view=PositionRoleView())
 
+    # Teams public channel
     teams_ch = discord.utils.get(guild.text_channels, name="teams")
     if not teams_ch:
         teams_ch = await guild.create_text_channel("teams")
 
-    async for msg in teams_ch.history(limit=10):
-        if msg.author == bot.user:
-            break
-    else:
-        sample_teams = [
-            {"name": "TE FC", "captain": "ibra", "logo": "https://i.imgur.com/8Q9Z5bX.png", "color": discord.Color.purple()},
-            {"name": "Petrojet", "captain": "ibra", "logo": "https://i.imgur.com/U03V7K1.png", "color": discord.Color.red()},
-            {"name": "Zamalek", "captain": "Zamalek Stats", "logo": "https://i.imgur.com/L7pW9XQ.png", "color": discord.Color.white()},
-            {"name": "Ghazl El Mahalla", "captain": "Ghazl Stats", "logo": "https://i.imgur.com/yV9nK3D.png", "color": discord.Color.gold()},
-            {"name": "Makkasa", "captain": "ibra", "logo": "https://i.imgur.com/z4D8M1P.png", "color": discord.Color.green()}
-        ]
-        for t in sample_teams:
-            embed = discord.Embed(
-                title=f"🛡️ {t['name']}",
-                description=f"**Captain:** `{t['captain']}`\n**Status:** Active League Team",
-                color=t["color"],
-                timestamp=datetime.datetime.now()
-            )
-            embed.set_thumbnail(url=t["logo"])
-            embed.set_footer(text="Skill Issue Prim League | Official Team Profile")
-            await teams_ch.send(embed=embed)
-
 @bot.event
 async def on_ready():
-    print(f"==================================================", flush=True)
-    print(f"🤖 Haxball Collaborative Bot online as: {bot.user.name} ({bot.user.id})", flush=True)
+    print(f"🤖 Bot online as: {bot.user.name}", flush=True)
     bot.add_view(PositionRoleView())
-    print(f"Connected to {len(bot.guilds)} server(s):", flush=True)
     for g in bot.guilds:
-        print(f" - {g.name} (ID: {g.id})", flush=True)
-        await create_roles_and_teams_auto(g)
-        await auto_sync_all_markets(g)
-    print(f"==================================================", flush=True)
+        await setup_leader_headquarters(g)
+        await setup_roles_and_teams(g)
+        await update_unified_market_channel(g)
+    print("✅ Initialization complete!", flush=True)
 
 @bot.event
 async def on_member_join(member):
@@ -259,7 +244,6 @@ async def on_member_join(member):
 
     welcome_ch = discord.utils.get(guild.text_channels, name="welcome") or \
                  discord.utils.get(guild.text_channels, name="general") or \
-                 discord.utils.get(guild.text_channels, name="chat") or \
                  guild.text_channels[0]
 
     if welcome_ch:
@@ -271,6 +255,49 @@ async def print_market_command(ctx):
     embeds = build_market_embeds()
     for emb in embeds:
         await ctx.send(embed=emb)
+
+@bot.command(name='createteam')
+async def create_team(ctx, team_name: str, captain: str):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only Leaders/Admins can create teams!")
+        return
+
+    guild = ctx.guild
+
+    # 1. Create Team Role
+    team_role = discord.utils.get(guild.roles, name=team_name)
+    if not team_role:
+        team_role = await guild.create_role(name=team_name, color=discord.Color.blue(), mentionable=True)
+
+    # 2. Create Private Team Channel
+    cat = discord.utils.get(guild.categories, name="🛡️ TEAM CHANNELS")
+    if not cat:
+        cat = await guild.create_category("🛡️ TEAM CHANNELS")
+
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=False, view_channel=False),
+        team_role: discord.PermissionOverwrite(read_messages=True, send_messages=True, view_channel=True),
+        guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, view_channel=True)
+    }
+
+    chan_name = f"💬-{team_name.lower().replace(' ', '-')}"
+    team_ch = discord.utils.get(guild.text_channels, name=chan_name)
+    if not team_ch:
+        team_ch = await guild.create_text_channel(chan_name, category=cat, overwrites=overwrites)
+
+    # 3. Post Team Card in #teams
+    teams_ch = discord.utils.get(guild.text_channels, name="teams")
+    if teams_ch:
+        embed = discord.Embed(
+            title=f"🛡️ {team_name}",
+            description=f"**Captain:** `{captain}`\n**Role:** {team_role.mention}\n**Private Chat:** {team_ch.mention}",
+            color=discord.Color.blue(),
+            timestamp=datetime.datetime.now()
+        )
+        embed.set_footer(text="Skill Issue Prim League | Registered Team Profile")
+        await teams_ch.send(embed=embed)
+
+    await ctx.send(f"✅ Team **{team_name}** created! Role {team_role.mention} & Private Channel {team_ch.mention} ready!")
 
 @bot.command(name='addplayer')
 async def add_player(ctx, name: str, pos: str, club: str, price: float):
@@ -289,7 +316,7 @@ async def add_player(ctx, name: str, pos: str, club: str, price: float):
     players.append(new_p)
     save_shared_market(players)
     await ctx.send(f"✅ Added player **{name}** ({pos.upper()}) to **{club}** for €{price}M!")
-    await auto_sync_all_markets(ctx.guild)
+    await update_unified_market_channel(ctx.guild)
 
 @bot.command(name='setprice')
 async def set_price(ctx, name: str, new_price: float):
@@ -306,7 +333,7 @@ async def set_price(ctx, name: str, new_price: float):
     if found:
         save_shared_market(players)
         await ctx.send(f"✅ Updated **{name}**'s price to €{new_price}M!")
-        await auto_sync_all_markets(ctx.guild)
+        await update_unified_market_channel(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
 
@@ -325,7 +352,7 @@ async def set_club(ctx, name: str, *, new_club: str):
     if found:
         save_shared_market(players)
         await ctx.send(f"✅ Transferred **{name}** to **{new_club}**!")
-        await auto_sync_all_markets(ctx.guild)
+        await update_unified_market_channel(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
 
