@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: haxball-market-server
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python realtime_server.py
+    plan: free
+
+  - type: worker
+    name: haxball-league-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot_adaptive.py
+    plan: free
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false
