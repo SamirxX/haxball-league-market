@@ -3,323 +3,554 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haxball Prim League - Discord Server & League Management</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Skill Issue Prim League - Dynamic Transfer Market (Realtime Collaborative)</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0c0e14;
+            --bg-card: #141722;
+            --bg-input: #1b1f2e;
+            --accent-gold: #e5b842;
+            --accent-gold-dark: #b88f28;
+            --accent-blue: #5865f2;
+            --text-main: #f0f2f5;
+            --text-muted: #8b95a5;
+            --border-color: #262b3d;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --font-sans: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1380px;
+        }
+
+        /* Header with Logo */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            padding: 24px 32px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand-logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 10px rgba(229, 184, 66, 0.4));
+        }
+
+        .brand-title h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            letter-spacing: 0.5px;
+        }
+
+        .brand-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .stats-summary {
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat-pill {
+            background: rgba(229, 184, 66, 0.1);
+            border: 1px solid rgba(229, 184, 66, 0.3);
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            text-align: right;
+        }
+
+        .stat-pill .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-pill .value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            font-family: var(--font-mono);
+        }
+
+        /* Control Panel */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 18px 24px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px 10px 40px;
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .passcode-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            width: 180px;
+            outline: none;
+            font-family: var(--font-mono);
+        }
+
+        .passcode-input:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .btn {
+            background: var(--accent-gold);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--accent-gold-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            color: #fff;
+        }
+
+        /* Table Design */
+        .table-wrapper {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255,255,255,0.02);
+            padding: 16px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255,255,255,0.015);
+        }
+
+        .player-num {
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            font-weight: 600;
+            width: 50px;
+        }
+
+        .table-input, .table-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            width: 100%;
+            outline: none;
+            font-family: var(--font-sans);
+        }
+
+        .table-input:focus, .table-select:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .price-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding-left: 10px;
+        }
+
+        .price-currency {
+            color: var(--accent-gold);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .price-input-wrapper .table-input {
+            border: none;
+            background: transparent;
+            font-family: var(--font-mono);
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .btn-danger-sm {
+            background: rgba(235, 87, 87, 0.15);
+            color: #eb5757;
+            border: 1px solid rgba(235, 87, 87, 0.3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-danger-sm:hover {
+            background: #eb5757;
+            color: #fff;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg-card);
+            border: 1px solid var(--accent-gold);
+            color: var(--text-main);
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast i {
+            color: var(--accent-gold);
+            font-size: 1.2rem;
+        }
+
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-badge">
-                    <i class="fa-solid fa-trophy"></i>
-                </div>
-                <div class="brand-text">
-                    <h2>SKL PRIM LEAGUE</h2>
-                    <span>Haxball Discord Suite</span>
-                </div>
-            </div>
 
-            <nav class="nav-menu">
-                <button class="nav-btn active" data-tab="discord-preview">
-                    <i class="fa-brands fa-discord"></i> Discord Server Layout
-                </button>
-                <button class="nav-btn" data-tab="league-standings">
-                    <i class="fa-solid fa-list-ol"></i> Live Standings & Results
-                </button>
-                <button class="nav-btn" data-tab="bot-commands">
-                    <i class="fa-solid fa-robot"></i> Discord Bot Commands
-                </button>
-                <button class="nav-btn" data-tab="role-matrix">
-                    <i class="fa-solid fa-shield-halved"></i> Roles & Permissions
-                </button>
-                <button class="nav-btn" data-tab="setup-guide">
-                    <i class="fa-solid fa-book-bookmark"></i> Setup Blueprint
-                </button>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="server-status">
-                    <span class="status-dot online"></span>
-                    <span>Haxball Bot: Ready</span>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="brand-box">
+                <img src="logo.png" alt="Skill Issue Prim League Logo" class="brand-logo" onerror="this.src='https://i.imgur.com/8Q9Z5bX.png'">
+                <div class="brand-title">
+                    <h1>SKILL ISSUE PRIM LEAGUE</h1>
+                    <p>Official Collaborative Transfer Market Roster</p>
                 </div>
             </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="top-header">
-                <div class="header-title">
-                    <h1 id="page-title">Discord Server Layout Visualizer</h1>
-                    <p id="page-subtitle">Preview the structure, categories, and channels designed for competitive Haxball leagues</p>
+            <div class="stats-summary">
+                <div class="stat-pill">
+                    <div class="label">Total Registered</div>
+                    <div class="value" id="total-players-count">0</div>
                 </div>
-                <div class="header-actions">
-                    <button class="btn btn-outline" id="export-json-btn">
-                        <i class="fa-solid fa-download"></i> Export Server Config
-                    </button>
-                    <button class="btn btn-primary" id="copy-template-btn">
-                        <i class="fa-solid fa-copy"></i> Copy Setup Blueprint
-                    </button>
+                <div class="stat-pill">
+                    <div class="label">Total Market Value</div>
+                    <div class="value" id="total-market-value">€0.0M</div>
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <!-- Tab 1: Discord Preview -->
-            <section id="tab-discord-preview" class="tab-content active">
-                <div class="discord-mockup-wrapper">
-                    <!-- Left: Channel Tree -->
-                    <div class="discord-channels-pane">
-                        <div class="server-header-bar">
-                            <i class="fa-solid fa-shield"></i>
-                            <span>SKILL ISSUE PRIM LEAGUE</span>
-                            <i class="fa-solid fa-angle-down chevron"></i>
-                        </div>
+        <!-- Controls -->
+        <div class="controls-bar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search player, position, or club...">
+            </div>
+            <div class="action-group">
+                <input type="password" id="leader-passcode" class="passcode-input" placeholder="Leader Passcode" value="">
+                <button class="btn" id="add-player-btn"><i class="fa-solid fa-plus"></i> Add Player</button>
+                <button class="btn btn-secondary" id="save-sync-btn"><i class="fa-solid fa-rotate"></i> Sync Live</button>
+                <button class="btn btn-secondary" id="discord-publish-btn"><i class="fa-brands fa-discord"></i> Discord Active</button>
+            </div>
+        </div>
 
-                        <div class="channel-tree" id="channel-tree-container">
-                            <!-- Categories & Channels injected by app.js -->
-                        </div>
-                    </div>
-
-                    <!-- Right: Channel Detail Inspector -->
-                    <div class="discord-inspector-pane">
-                        <div class="inspector-header">
-                            <h3 id="inspector-channel-name"><i class="fa-solid fa-hashtag"></i> match-reporting</h3>
-                            <span class="channel-type-tag" id="inspector-channel-type">Text Channel</span>
-                        </div>
-                        <p class="channel-desc" id="inspector-channel-desc">Captains post official match scores here using format: !report @TeamA 3 - 1 @TeamB</p>
-
-                        <div class="inspector-card">
-                            <h4><i class="fa-solid fa-lock"></i> Channel Permissions</h4>
-                            <div class="permission-tags" id="inspector-permissions">
-                                <!-- Tags injected by JS -->
-                            </div>
-                        </div>
-
-                        <div class="inspector-card">
-                            <h4><i class="fa-solid fa-terminal"></i> Sample Channel View / Auto-Post</h4>
-                            <div class="chat-preview-box" id="inspector-chat-preview">
-                                <!-- Chat preview -->
-                            </div>
-                        </div>
-
-                        <div class="inspector-card">
-                            <h4><i class="fa-solid fa-lightbulb"></i> Best Practice Recommendation</h4>
-                            <p id="inspector-tip">Keep this channel strictly locked to Captains and Referees to prevent spam and maintain verified match logs.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab 2: League Standings & Simulator -->
-            <section id="tab-league-standings" class="tab-content">
-                <div class="grid-2col">
-                    <!-- Standings Table -->
-                    <div class="card card-wide">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-ranking-star"></i> Season 1 - Division 1 Standings</h3>
-                            <button class="btn btn-sm btn-outline" id="reset-stats-btn"><i class="fa-solid fa-rotate-left"></i> Reset Stats</button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="standings-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Team</th>
-                                        <th>MP</th>
-                                        <th>W</th>
-                                        <th>D</th>
-                                        <th>L</th>
-                                        <th>GF</th>
-                                        <th>GA</th>
-                                        <th>GD</th>
-                                        <th>PTS</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="standings-tbody">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Match Score Reporter Simulator -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-gamepad"></i> Submit Match Result</h3>
-                        </div>
-                        <form id="match-report-form" class="match-form">
-                            <div class="form-group">
-                                <label for="home-team-select">Home Team</label>
-                                <select id="home-team-select" required></select>
-                            </div>
-                            <div class="score-input-row">
-                                <div class="form-group">
-                                    <label>Home Score</label>
-                                    <input type="number" id="home-score" min="0" max="15" value="3" required>
-                                </div>
-                                <span class="vs-divider">VS</span>
-                                <div class="form-group">
-                                    <label>Away Score</label>
-                                    <input type="number" id="away-score" min="0" max="15" value="1" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="away-team-select">Away Team</label>
-                                <select id="away-team-select" required></select>
-                            </div>
-                            <div class="form-group">
-                                <label for="match-mvp">Match MVP (Optional)</label>
-                                <input type="text" id="match-mvp" placeholder="e.g. @striker99">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fa-solid fa-paper-plane"></i> Submit Official Score
-                            </button>
-                        </form>
-
-                        <div class="recent-matches-box">
-                            <h4>Recent Match Feed</h4>
-                            <ul class="match-feed-list" id="match-feed-list">
-                                <!-- Dynamic matches -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab 3: Bot Commands -->
-            <section id="tab-bot-commands" class="tab-content">
-                <div class="commands-grid">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-users"></i> Player & Team Commands</h3>
-                        </div>
-                        <div class="command-list">
-                            <div class="command-item">
-                                <div class="cmd-syntax">!register [Haxball_Nick]</div>
-                                <div class="cmd-desc">Registers a user into the league database and assigns the @Free Agent role.</div>
-                            </div>
-                            <div class="command-item">
-                                <div class="cmd-syntax">!createteam [Team_Name] [Tag]</div>
-                                <div class="cmd-desc">Creates a new team entry, creates team role & captain permissions.</div>
-                            </div>
-                            <div class="command-item">
-                                <div class="cmd-syntax">!sign @Player</div>
-                                <div class="cmd-desc">Captains sign a free agent to their team roster.</div>
-                            </div>
-                            <div class="command-item">
-                                <div class="cmd-syntax">!release @Player</div>
-                                <div class="cmd-desc">Releases a player back to the free agents market.</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-trophy"></i> Match & League Commands</h3>
-                        </div>
-                        <div class="command-list">
-                            <div class="command-item">
-                                <div class="cmd-syntax">!report @Home [score] - [score] @Away</div>
-                                <div class="cmd-desc">Submits match score, updates league table, and records goal diff.</div>
-                            </div>
-                            <div class="command-item">
-                                <div class="cmd-syntax">!standings</div>
-                                <div class="cmd-desc">Outputs the live league standings table directly into Discord chat.</div>
-                            </div>
-                            <div class="command-item">
-                                <div class="cmd-syntax">!roster @Team</div>
-                                <div class="cmd-desc">Displays current active roster and squad list for a team.</div>
-                            </div>
-                            <div class="command-item">
-                                <div class="cmd-syntax">!freeagents</div>
-                                <div class="cmd-desc">Lists all available free agents ready for team contracts.</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card card-wide">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-code"></i> Python Bot Script Preview (`haxball_bot.py`)</h3>
-                            <button class="btn btn-sm btn-outline" id="copy-bot-code-btn"><i class="fa-solid fa-copy"></i> Copy Bot Code</button>
-                        </div>
-                        <pre class="code-block" id="python-bot-code"><code># Complete Discord.py Haxball League Bot snippet loaded in JS</code></pre>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab 4: Roles & Permissions -->
-            <section id="tab-role-matrix" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-users-gear"></i> Role Hierarchy & Permissions Matrix</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="role-table">
-                            <thead>
-                                <tr>
-                                    <th>Role Name</th>
-                                    <th>Color</th>
-                                    <th>Hoist (Display Separate)</th>
-                                    <th>Key Permissions</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody id="role-matrix-tbody">
-                                <!-- Roles injected by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab 5: Setup Blueprint -->
-            <section id="tab-setup-guide" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-clipboard-list"></i> Step-by-Step Server Creation Guide</h3>
-                    </div>
-                    <div class="guide-steps">
-                        <div class="guide-step">
-                            <div class="step-num">1</div>
-                            <div class="step-info">
-                                <h4>Create Categories & Roles</h4>
-                                <p>Set up the exact category and role structure provided in the Visualizer tab. Assign color hex codes to differentiate League Admins, Captains, and Teams.</p>
-                            </div>
-                        </div>
-                        <div class="guide-step">
-                            <div class="step-num">2</div>
-                            <div class="step-info">
-                                <h4>Configure Channel Permissions</h4>
-                                <p>Restrict <code>#announcements</code> and <code>#standings</code> to read-only for regular players. Give Captains permission to post in <code>#match-reporting</code> and <code>#transfers</code>.</p>
-                            </div>
-                        </div>
-                        <div class="guide-step">
-                            <div class="step-num">3</div>
-                            <div class="step-info">
-                                <h4>Deploy the Haxball League Bot</h4>
-                                <p>Install <code>discord.py</code> on your computer or VPS, insert your Bot Token, and run <code>python bot.py</code> to handle automatic standings and match reports.</p>
-                            </div>
-                        </div>
-                        <div class="guide-step">
-                            <div class="step-num">4</div>
-                            <div class="step-info">
-                                <h4>Set Up Haxball Headless Room (Optional)</h4>
-                                <p>Integrate a Haxball Headless Host script to automatically broadcast room links to <code>#haxball-links</code> whenever matches are ready to be played!</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
+        <!-- Table -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th>Player Name</th>
+                        <th>Club</th>
+                        <th style="width: 130px;">Pos</th>
+                        <th style="width: 160px;">Value</th>
+                        <th style="width: 140px;">Status</th>
+                        <th style="width: 70px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="player-table-body">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden">
-        <i class="fa-solid fa-circle-check"></i> <span id="toast-message">Copied to clipboard!</span>
+        <i class="fa-solid fa-circle-check"></i> <span id="toast-msg">Data synced live for all leaders!</span>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        let players = [];
+        let isFocusedOnInput = false;
+
+        async function fetchSharedPlayers() {
+            if (isFocusedOnInput) return; // Don't interrupt active typing
+
+            try {
+                // Fetch from static shared_market.json (GitHub Pages compatible) or local backend
+                const res = await fetch('shared_market.json?v=' + Date.now());
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        players = data;
+                        renderTable(document.getElementById("search-input").value);
+                    }
+                }
+            } catch (err) {
+                console.log("Realtime fetch info:", err);
+            }
+        }
+
+        function formatDisplayPrice(price) {
+            let p = Number(price) || 0;
+            if (p < 1000) return p; // Already in millions
+            return (p / 1000000).toFixed(1);
+        }
+
+        function renderTable(filterQuery = "") {
+            const tbody = document.getElementById("player-table-body");
+            tbody.innerHTML = "";
+
+            let totalValue = 0;
+            const filtered = players.filter(p => 
+                (p.name || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+                (p.club || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+                (p.pos || "").toLowerCase().includes(filterQuery.toLowerCase())
+            );
+
+            filtered.forEach((p, index) => {
+                let numericPrice = Number(p.price) || 0;
+                totalValue += numericPrice < 1000 ? numericPrice : (numericPrice / 1000000);
+                p.num = index + 1; // Re-index dynamically
+                
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="player-num">${p.num}</td>
+                    <td>
+                        <input type="text" class="table-input" value="${p.name || ''}" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'name', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="table-input" value="${p.club || 'Free Agent'}" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'club', this.value)">
+                    </td>
+                    <td>
+                        <select class="table-select" onchange="updatePlayer(${p.id}, 'pos', this.value)">
+                            <option value="ST" ${p.pos === 'ST' ? 'selected' : ''}>ST (Striker)</option>
+                            <option value="CM" ${p.pos === 'CM' ? 'selected' : ''}>CM (Midfielder)</option>
+                            <option value="CB" ${p.pos === 'CB' ? 'selected' : ''}>CB (Defender)</option>
+                            <option value="GK" ${p.pos === 'GK' ? 'selected' : ''}>GK (Goalkeeper)</option>
+                            <option value="DM" ${p.pos === 'DM' ? 'selected' : ''}>DM (Def Mid)</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="price-input-wrapper">
+                            <span class="price-currency">€</span>
+                            <input type="number" class="table-input" value="${formatDisplayPrice(p.price)}" min="0" step="0.5" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'price', this.value)">
+                            <span class="price-currency" style="padding-right: 8px;">M</span>
+                        </div>
+                    </td>
+                    <td>
+                        <select class="table-select" onchange="updatePlayer(${p.id}, 'status', this.value)">
+                            <option value="Signed" ${p.status === 'Signed' ? 'selected' : ''}>Signed</option>
+                            <option value="Free Agent" ${p.status === 'Free Agent' ? 'selected' : ''}>Free Agent</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger-sm" onclick="removePlayer(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("total-players-count").textContent = players.length;
+            document.getElementById("total-market-value").textContent = "€" + totalValue.toFixed(1) + "M";
+        }
+
+        async function updatePlayer(id, key, val) {
+            const p = players.find(x => x.id === id);
+            if (p) {
+                p[key] = key === 'price' ? Number(val) : val;
+                if (key === 'club') {
+                    p.status = val.toLowerCase().includes("free") ? "Free Agent" : "Signed";
+                }
+                await syncToBackend();
+            }
+        }
+
+        async function addNewPlayer() {
+            const newId = players.length > 0 ? Math.max(...players.map(p => p.id || 0)) + 1 : 1;
+            const newPlayer = {
+                id: newId,
+                num: players.length + 1,
+                name: `New Player ${players.length + 1}`,
+                club: "Free Agent",
+                pos: "CM",
+                price: 5.0,
+                status: "Free Agent"
+            };
+            players.push(newPlayer);
+            renderTable(document.getElementById("search-input").value);
+            await syncToBackend();
+            showToast(`Added Player #${players.length}! Total players: ${players.length}`);
+        }
+
+        async function removePlayer(id) {
+            if (confirm("Are you sure you want to remove this player?")) {
+                players = players.filter(p => p.id !== id);
+                renderTable(document.getElementById("search-input").value);
+                await syncToBackend();
+                showToast("Player removed!");
+            }
+        }
+
+        async function syncToBackend() {
+            const passcode = document.getElementById("leader-passcode").value;
+            try {
+                const res = await fetch('/api/players/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passcode, players })
+                });
+
+                if (res.ok) {
+                    showToast("⚡ Real-time edit synced for all 3 Leaders!");
+                } else {
+                    showToast("⚡ HTML synced locally!");
+                }
+            } catch (err) {
+                console.log("Error syncing:", err);
+            }
+        }
+
+        document.getElementById("add-player-btn").addEventListener("click", addNewPlayer);
+        document.getElementById("search-input").addEventListener("input", (e) => renderTable(e.target.value));
+        document.getElementById("save-sync-btn").addEventListener("click", syncToBackend);
+        document.getElementById("discord-publish-btn").addEventListener("click", () => {
+            showToast("🚀 Roster updated! Type !market in Discord to print!");
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toast-msg").textContent = msg;
+            toast.classList.remove("hidden");
+            setTimeout(() => toast.classList.add("hidden"), 3500);
+        }
+
+        fetchSharedPlayers();
+        setInterval(fetchSharedPlayers, 3000);
+    </script>
 </body>
 </html>
