@@ -63,7 +63,7 @@ async def send_market_embeds(target):
         await target.send(embed=embed)
 
 # ----------------------------------------------------
-# POSITION ROLES INTERACTIVE BUTTON VIEW
+# POSITION ROLES MULTI-SELECT INTERACTIVE BUTTON VIEW
 # ----------------------------------------------------
 POSITIONS_CONFIG = {
     "ST": {"emoji": "⚽", "name": "ST", "color": discord.Color.red(), "desc": "Striker / Attacker"},
@@ -88,7 +88,6 @@ class PositionButton(discord.ui.Button):
         member = interaction.user
         role_name = self.pos_data["name"]
 
-        # Find or create position role
         role = discord.utils.get(guild.roles, name=role_name)
         if not role:
             role = await guild.create_role(
@@ -97,22 +96,81 @@ class PositionButton(discord.ui.Button):
                 mentionable=True
             )
 
-        # Remove other position roles if user already has one
-        existing_pos_roles = [r for r in member.roles if r.name in POSITIONS_CONFIG]
+        # Allow selecting multiple roles (Toggle on/off per position)
         if role in member.roles:
             await member.remove_roles(role)
             await interaction.response.send_message(f"❌ Removed **{role_name}** position role.", ephemeral=True)
         else:
-            if existing_pos_roles:
-                await member.remove_roles(*existing_pos_roles)
             await member.add_roles(role)
-            await interaction.response.send_message(f"✅ You are now assigned the **{role_name}** ({self.pos_data['emoji']}) position role!", ephemeral=True)
+            await interaction.response.send_message(f"✅ Added **{role_name}** ({self.pos_data['emoji']}) position role! You can select other positions as well.", ephemeral=True)
 
 class PositionRoleView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         for p_key, p_data in POSITIONS_CONFIG.items():
             self.add_item(PositionButton(p_key, p_data))
+
+async def create_roles_and_teams_auto(guild):
+    # 1. Auto Setup #roles channel
+    roles_ch = discord.utils.get(guild.text_channels, name="roles") or \
+               discord.utils.get(guild.text_channels, name="position-roles")
+    if not roles_ch:
+        roles_ch = await guild.create_text_channel("roles")
+
+    for p_key, p_data in POSITIONS_CONFIG.items():
+        if not discord.utils.get(guild.roles, name=p_data["name"]):
+            await guild.create_role(name=p_data["name"], color=p_data["color"], mentionable=True)
+
+    # Check if roles embed already posted
+    async for msg in roles_ch.history(limit=10):
+        if msg.author == bot.user and msg.embeds and "Select Your Position" in (msg.embeds[0].title or ""):
+            break
+    else:
+        embed = discord.Embed(
+            title="⚽ **Select Your Position(s)!**",
+            description=(
+                "Click the buttons below to choose your Haxball positions (**You can select more than one!**):\n\n"
+                "⚽ = **ST** (Striker)\n"
+                "🧙‍♂️ = **CM** (Central Midfielder)\n"
+                "🧱 = **CB** (Center Back / Defender)\n"
+                "🧤 = **GK** (Goalkeeper)\n\n"
+                "*Click any position button to toggle it on or off.*"
+            ),
+            color=discord.Color.gold()
+        )
+        embed.set_footer(text="Skill Issue Prim League | Multi-Position Selection")
+        view = PositionRoleView()
+        await roles_ch.send(embed=embed, view=view)
+        print(f"✅ Auto-posted multi-position selection in #{roles_ch.name}", flush=True)
+
+    # 2. Auto Setup #teams channel
+    teams_ch = discord.utils.get(guild.text_channels, name="teams") or \
+               discord.utils.get(guild.forum_channels, name="teams")
+    if not teams_ch:
+        teams_ch = await guild.create_text_channel("teams")
+
+    async for msg in teams_ch.history(limit=10):
+        if msg.author == bot.user:
+            break
+    else:
+        sample_teams = [
+            {"name": "TE FC", "captain": "ibra", "logo": "https://i.imgur.com/8Q9Z5bX.png", "color": discord.Color.purple()},
+            {"name": "Petrojet", "captain": "ibra", "logo": "https://i.imgur.com/U03V7K1.png", "color": discord.Color.red()},
+            {"name": "Zamalek", "captain": "Zamalek Stats", "logo": "https://i.imgur.com/L7pW9XQ.png", "color": discord.Color.white()},
+            {"name": "Ghazl El Mahalla", "captain": "Ghazl Stats", "logo": "https://i.imgur.com/yV9nK3D.png", "color": discord.Color.gold()},
+            {"name": "Makkasa", "captain": "ibra", "logo": "https://i.imgur.com/z4D8M1P.png", "color": discord.Color.green()}
+        ]
+        for t in sample_teams:
+            embed = discord.Embed(
+                title=f"🛡️ {t['name']}",
+                description=f"**Captain:** `{t['captain']}`\n**Status:** Active League Team",
+                color=t["color"],
+                timestamp=datetime.datetime.now()
+            )
+            embed.set_thumbnail(url=t["logo"])
+            embed.set_footer(text="Skill Issue Prim League | Official Team Profile")
+            await teams_ch.send(embed=embed)
+        print(f"✅ Auto-posted team profiles in #{teams_ch.name}", flush=True)
 
 # ----------------------------------------------------
 # BOT EVENTS & COMMANDS
@@ -122,7 +180,6 @@ async def on_ready():
     print(f"==================================================", flush=True)
     print(f"🤖 Haxball Collaborative Bot online as: {bot.user.name} ({bot.user.id})", flush=True)
     
-    # Register persistent view for buttons
     bot.add_view(PositionRoleView())
 
     logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logo.png')
@@ -138,6 +195,8 @@ async def on_ready():
     print(f"Connected to {len(bot.guilds)} server(s):", flush=True)
     for g in bot.guilds:
         print(f" - {g.name} (ID: {g.id})", flush=True)
+        await create_roles_and_teams_auto(g)
+
     print(f"==================================================", flush=True)
 
 @bot.event
@@ -174,73 +233,13 @@ async def on_member_join(member):
 @bot.command(name='setup_roles', aliases=['setuproles', 'roles'])
 @commands.has_permissions(administrator=True)
 async def setup_roles(ctx):
-    """Sets up the interactive #roles position selection channel matching exact requested UI"""
-    guild = ctx.guild
-    roles_ch = discord.utils.get(guild.text_channels, name="roles") or \
-               discord.utils.get(guild.text_channels, name="position-roles")
-    
-    if not roles_ch:
-        roles_ch = await guild.create_text_channel("roles")
-
-    # Ensure position roles exist in server
-    for p_key, p_data in POSITIONS_CONFIG.items():
-        if not discord.utils.get(guild.roles, name=p_data["name"]):
-            await guild.create_role(name=p_data["name"], color=p_data["color"], mentionable=True)
-
-    embed = discord.Embed(
-        title="⚽ **Select Your Position!**",
-        description=(
-            "Click a button below to choose your main Haxball position:\n\n"
-            "⚽ = **ST** (Striker)\n"
-            "🧙‍♂️ = **CM** (Central Midfielder)\n"
-            "🧱 = **CB** (Center Back / Defender)\n"
-            "🧤 = **GK** (Goalkeeper)\n\n"
-            "*Clicking again will remove the role.*"
-        ),
-        color=discord.Color.gold()
-    )
-    embed.set_footer(text="Skill Issue Prim League | Position Selection")
-    
-    view = PositionRoleView()
-    await roles_ch.send(embed=embed, view=view)
-    await ctx.send(f"✅ Position Roles selection posted in {roles_ch.mention}!")
-
-@bot.command(name='setup_teams', aliases=['setupteams'])
-@commands.has_permissions(administrator=True)
-async def setup_teams(ctx):
-    """Populates the #teams channel with styled cards for teams matching the screenshot design"""
-    guild = ctx.guild
-    teams_ch = discord.utils.get(guild.text_channels, name="teams") or \
-               discord.utils.get(guild.forum_channels, name="teams")
-
-    if not teams_ch:
-        teams_ch = await guild.create_text_channel("teams")
-
-    sample_teams = [
-        {"name": "TE FC", "captain": "ibra", "logo": "https://i.imgur.com/8Q9Z5bX.png", "color": discord.Color.purple()},
-        {"name": "Petrojet", "captain": "ibra", "logo": "https://i.imgur.com/U03V7K1.png", "color": discord.Color.red()},
-        {"name": "Zamalek", "captain": "Zamalek Stats", "logo": "https://i.imgur.com/L7pW9XQ.png", "color": discord.Color.white()},
-        {"name": "Ghazl El Mahalla", "captain": "Ghazl Stats", "logo": "https://i.imgur.com/yV9nK3D.png", "color": discord.Color.gold()},
-        {"name": "Makkasa", "captain": "ibra", "logo": "https://i.imgur.com/z4D8M1P.png", "color": discord.Color.green()}
-    ]
-
-    for t in sample_teams:
-        embed = discord.Embed(
-            title=f"🛡️ {t['name']}",
-            description=f"**Captain:** `{t['captain']}`\n**Status:** Active League Team",
-            color=t["color"],
-            timestamp=datetime.datetime.now()
-        )
-        embed.set_thumbnail(url=t["logo"])
-        embed.set_footer(text="Skill Issue Prim League | Official Team Profile")
-        await teams_ch.send(embed=embed)
-
-    await ctx.send(f"✅ Team profiles posted in {teams_ch.mention}!")
+    await create_roles_and_teams_auto(ctx.guild)
+    await ctx.send("✅ Multi-position selection & Team Cards updated!")
 
 @bot.command(name='addteam')
 @commands.has_permissions(administrator=True)
 async def add_team(ctx, team_name: str, captain: str = "TBD", logo_url: str = ""):
-    """Add a new team profile to #teams channel: !addteam "Team Name" "Captain" [logo_url]"""
+    """Add a new team profile card to #teams channel: !addteam "Team Name" "Captain" [logo_url]"""
     guild = ctx.guild
     teams_ch = discord.utils.get(guild.text_channels, name="teams")
     if not teams_ch:
@@ -269,20 +268,6 @@ async def test_welcome(ctx):
 @bot.command(name='market', aliases=['printmarket', 'postmarket'])
 async def print_market_command(ctx):
     await send_market_embeds(ctx)
-
-@bot.command(name='help_league')
-async def help_league(ctx):
-    embed = discord.Embed(
-        title="⚽ Haxball League Commands",
-        description="Here are all the available league commands:",
-        color=discord.Color.gold()
-    )
-    embed.add_field(name="📊 !market", value="Prints the live Transfer Market table.", inline=False)
-    embed.add_field(name="🎯 !setup_roles", value="Creates & posts interactive #roles position selector.", inline=False)
-    embed.add_field(name="🛡️ !setup_teams", value="Populates #teams channel with styled team cards.", inline=False)
-    embed.add_field(name="➕ !addteam <name> <captain> [logo]", value="Adds a new team card to #teams.", inline=False)
-    embed.set_footer(text="Haxball Collaborative League Manager")
-    await ctx.send(embed=embed)
 
 if __name__ == "__main__":
     TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
