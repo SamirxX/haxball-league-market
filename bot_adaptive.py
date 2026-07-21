@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import json
 import datetime
 import os
@@ -18,6 +18,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 SHARED_MARKET_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shared_market.json')
 GITHUB_PAGES_URL = "https://samirxx.github.io/haxball-league-market/players_market.html"
 
+# Track file last modified time for auto-syncing HTML -> Discord
+last_file_mtime = 0
+
 def load_shared_market():
     if os.path.exists(SHARED_MARKET_FILE):
         try:
@@ -28,15 +31,16 @@ def load_shared_market():
     return []
 
 def save_shared_market(data):
+    global last_file_mtime
     try:
         with open(SHARED_MARKET_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+        last_file_mtime = os.path.getmtime(SHARED_MARKET_FILE)
     except Exception as e:
         print("Error saving shared_market.json:", e)
 
 def format_price(raw_price):
     p = float(raw_price)
-    # If price is in single/double digits (e.g. 10.3), treat as millions
     if p < 1000:
         return f"€{p:.1f}M"
     else:
@@ -97,15 +101,18 @@ def build_market_embeds():
     return embeds
 
 async def update_unified_market_channel(guild):
-    # Get transfer hub category or general
     transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
-    market_ch = discord.utils.get(guild.text_channels, name="『🛒』market") or \
+    
+    # Stylized market channel name
+    market_ch = discord.utils.get(guild.text_channels, name="『🛒』transfer-market") or \
+                discord.utils.get(guild.text_channels, name="『🛒』market") or \
                 discord.utils.get(guild.text_channels, name="market")
     
     if not market_ch:
-        market_ch = await guild.create_text_channel("『🛒』market", category=transfer_cat)
-    elif transfer_cat and market_ch.category != transfer_cat:
-        await market_ch.edit(category=transfer_cat)
+        market_ch = await guild.create_text_channel("『🛒』transfer-market", category=transfer_cat)
+    else:
+        if market_ch.name != "『🛒』transfer-market" or (transfer_cat and market_ch.category != transfer_cat):
+            await market_ch.edit(name="『🛒』transfer-market", category=transfer_cat)
 
     embeds = build_market_embeds()
 
@@ -117,19 +124,33 @@ async def update_unified_market_channel(guild):
             except Exception:
                 pass
 
-    header_msg = f"🌐 **LIVE INTERACTIVE MARKET WEB LINK:**\n<{GITHUB_PAGES_URL}>\n\n*(Passcode for Leaders: `PRIM-LEADER-2026`)*\n👇 **LIVE TRANSFER MARKET TABLE (Auto-Refreshes Below):**"
+    header_msg = f"🌐 **LIVE INTERACTIVE MARKET WEB LINK:**\n<{GITHUB_PAGES_URL}>\n\n*(Passcode for Leaders: `PRIM-LEADER-2026`)*\n👇 **LIVE TRANSFER MARKET TABLE (Auto-Refreshes on Web Edit):**"
     await market_ch.send(header_msg)
 
     for emb in embeds:
         await market_ch.send(embed=emb)
 
+@tasks.loop(seconds=3)
+async def check_file_changes_and_sync():
+    global last_file_mtime
+    if os.path.exists(SHARED_MARKET_FILE):
+        current_mtime = os.path.getmtime(SHARED_MARKET_FILE)
+        if last_file_mtime == 0:
+            last_file_mtime = current_mtime
+        elif current_mtime > last_file_mtime:
+            print("⚡ Detected file update (HTML/Backend edit)! Syncing Discord market...", flush=True)
+            last_file_mtime = current_mtime
+            for g in bot.guilds:
+                try:
+                    await update_unified_market_channel(g)
+                except Exception as e:
+                    print("Error auto-syncing Discord:", e)
+
 async def organize_server_structure(guild):
-    # Ensure uncategorized channels are neatly in correct categories matching special font style
     general_cat = discord.utils.get(guild.categories, name="▬▬▬ General ▬▬▬")
     transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
     league_cat = discord.utils.get(guild.categories, name="▬▬▬ Premier League ▬▬▬")
 
-    # Rename / move uncategorized channels
     welcome_ch = discord.utils.get(guild.text_channels, name="『👋』welcome") or discord.utils.get(guild.text_channels, name="welcome")
     if welcome_ch and general_cat and welcome_ch.category != general_cat:
         await welcome_ch.edit(name="『👋』welcome", category=general_cat)
@@ -142,7 +163,6 @@ async def organize_server_structure(guild):
     if teams_ch and league_cat and teams_ch.category != league_cat:
         await teams_ch.edit(name="『🛡️』teams", category=league_cat)
 
-    # Ensure Results channel has match announcement guide
     results_ch = discord.utils.get(guild.text_channels, name="『📈』results") or discord.utils.get(guild.text_channels, name="results")
     if results_ch:
         async for msg in results_ch.history(limit=5):
@@ -169,12 +189,10 @@ async def setup_leader_headquarters(guild):
     if not cat:
         cat = await guild.create_category("👑 LEADER HEADQUARTERS", overwrites=overwrites)
 
-    # 1. #leader-commands
     cmd_ch = discord.utils.get(guild.text_channels, name="leader-commands")
     if not cmd_ch:
         cmd_ch = await guild.create_text_channel("leader-commands", category=cat, sync_permissions=True)
 
-    # 2. #leader-commands-list
     guide_ch = discord.utils.get(guild.text_channels, name="leader-commands-list")
     if not guide_ch:
         guide_ch = await guild.create_text_channel("leader-commands-list", category=cat, sync_permissions=True)
@@ -185,7 +203,7 @@ async def setup_leader_headquarters(guild):
     else:
         embed = discord.Embed(
             title="👑 **OFFICIAL LEADER & ADMIN COMMANDS MANUAL**",
-            description="Use these commands in `#leader-commands` to update the market 24/7. All changes automatically update `#『🛒』market`!",
+            description="Use these commands in `#leader-commands` or edit the HTML page. All changes automatically update `#『🛒』transfer-market`!",
             color=0x9B59B6
         )
         embed.add_field(name="1️⃣ `!addplayer <Name> <Pos> <Club> <PriceInM>`", value="Add a player. Example: `!addplayer Ronaldo ST Zamalek 15`", inline=False)
@@ -263,6 +281,8 @@ async def on_ready():
         await setup_leader_headquarters(g)
         await setup_roles_and_teams(g)
         await update_unified_market_channel(g)
+    if not check_file_changes_and_sync.is_running():
+        check_file_changes_and_sync.start()
     print("✅ Initialization complete!", flush=True)
 
 @bot.event
@@ -299,12 +319,10 @@ async def create_team(ctx, team_name: str, captain: str):
 
     guild = ctx.guild
 
-    # 1. Create Team Role
     team_role = discord.utils.get(guild.roles, name=team_name)
     if not team_role:
         team_role = await guild.create_role(name=team_name, color=discord.Color.blue(), mentionable=True)
 
-    # 2. Create Private Team Channel
     cat = discord.utils.get(guild.categories, name="🛡️ TEAM CHANNELS")
     if not cat:
         cat = await guild.create_category("🛡️ TEAM CHANNELS")
@@ -320,7 +338,6 @@ async def create_team(ctx, team_name: str, captain: str):
     if not team_ch:
         team_ch = await guild.create_text_channel(chan_name, category=cat, overwrites=overwrites)
 
-    # 3. Post Team Card in #『🛡️』teams
     teams_ch = discord.utils.get(guild.text_channels, name="『🛡️』teams") or discord.utils.get(guild.text_channels, name="teams")
     if teams_ch:
         embed = discord.Embed(
@@ -332,7 +349,6 @@ async def create_team(ctx, team_name: str, captain: str):
         embed.set_footer(text="Skill Issue Prim League | New Team Announcement")
         await teams_ch.send(embed=embed)
 
-    # 4. Broadcast announcement to #『💬』general when new team joins
     gen_ch = discord.utils.get(guild.text_channels, name="『💬』general") or discord.utils.get(guild.text_channels, name="general")
     if gen_ch:
         announcement = f"🎉 ⚽ **NEW TEAM JOINED THE LEAGUE!** ⚽ 🎉\nWelcome **{team_name}** to **Skill Issue Premier League**! Captained by `{captain}`! {team_role.mention}"
