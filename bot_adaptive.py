@@ -413,6 +413,21 @@ async def set_club(ctx, name: str, *, new_club: str):
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
 
+@bot.command(name='removeplayer', aliases=['delplayer', 'deleteplayer'])
+async def remove_player(ctx, *, name: str):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only League Leaders / Admins can edit the market!")
+        return
+    players = load_shared_market()
+    initial_len = len(players)
+    players = [p for p in players if p.get("name", "").lower() != name.lower()]
+    if len(players) < initial_len:
+        save_shared_market(players)
+        await ctx.send(f"🗑️ Removed player **{name}** from the market!")
+        await update_unified_market_channel(ctx.guild)
+    else:
+        await ctx.send(f"❌ Player **{name}** not found.")
+
 if __name__ == "__main__":
     TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
     bot.run(TOKEN)
