@@ -34,7 +34,6 @@ def save_shared_market(data):
         print("Error saving shared_market.json:", e)
 
 def is_leader(user):
-    # Check if user has Administrator permission or Leader/Admin role
     if isinstance(user, discord.Member):
         if user.guild_permissions.administrator:
             return True
@@ -43,21 +42,26 @@ def is_leader(user):
             return True
     return False
 
-async def send_market_embeds(target):
+def build_market_embeds():
     players = load_shared_market()
     if not players:
-        await target.send("⚠️ No player data found in market database.")
-        return
+        embed = discord.Embed(
+            title="🏆 SKILL ISSUE PRIM LEAGUE - TRANSFER MARKET",
+            description="⚠️ No player data found in market database.",
+            color=discord.Color.gold()
+        )
+        return [embed]
 
     total_val = sum(float(p.get("price", 0)) for p in players) / 1000000.0
     chunk_size = 10
     chunks = [players[i:i + chunk_size] for i in range(0, len(players), chunk_size)]
     total_parts = len(chunks)
+    embeds = []
 
     for idx, chunk in enumerate(chunks, 1):
         embed = discord.Embed(
             title=f"🏆 SKILL ISSUE PRIM LEAGUE - TRANSFER MARKET (Part {idx}/{total_parts})",
-            description=f"Official Collaborative Roster | Total Players: {len(players)}",
+            description=f"Official Roster | Total Players: {len(players)}",
             color=discord.Color.gold()
         )
         
@@ -71,13 +75,63 @@ async def send_market_embeds(target):
         embed.add_field(name=f"Players {chunk[0].get('num', 1)} - {chunk[-1].get('num', len(chunk))}", value=table_str, inline=False)
         
         if idx == total_parts:
-            if bot.user.avatar:
+            if bot.user and bot.user.avatar:
                 embed.set_footer(text=f"Skill Issue Prim League | Live Total Market Value: €{total_val:.1f}M", icon_url=bot.user.avatar.url)
             else:
                 embed.set_footer(text=f"Skill Issue Prim League | Live Total Market Value: €{total_val:.1f}M")
             embed.timestamp = datetime.datetime.now()
+        embeds.append(embed)
+    return embeds
 
-        await target.send(embed=embed)
+async def update_channel_market(channel):
+    if not channel:
+        return
+    embeds = build_market_embeds()
+    
+    # Try to edit existing messages if bot posted them, or purge and resend clean
+    bot_msgs = []
+    async for msg in channel.history(limit=20):
+        if msg.author == bot.user:
+            bot_msgs.append(msg)
+    
+    bot_msgs.reverse() # chronological
+    
+    if len(bot_msgs) == len(embeds):
+        for msg, emb in zip(bot_msgs, embeds):
+            await msg.edit(embed=emb)
+    else:
+        # Purge bot messages and resend fresh
+        for msg in bot_msgs:
+            try:
+                await msg.delete()
+            except Exception:
+                pass
+        for emb in embeds:
+            await channel.send(embed=emb)
+
+async def auto_sync_all_markets(guild):
+    # Public channel everyone can see
+    public_ch = discord.utils.get(guild.text_channels, name="transfer-market") or \
+                discord.utils.get(guild.text_channels, name="market")
+    if not public_ch:
+        public_ch = await guild.create_text_channel("transfer-market")
+
+    # Leaders only channel
+    leader_ch = discord.utils.get(guild.text_channels, name="leader-commands") or \
+                discord.utils.get(guild.text_channels, name="leaders-market")
+    if not leader_ch:
+        # Create private leaders channel
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        for role in guild.roles:
+            if any(k in role.name.lower() for k in ['leader', 'admin', 'administrator', 'mod', 'manager', 'co-leader']):
+                overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        leader_ch = await guild.create_text_channel("leader-commands", overwrites=overwrites)
+
+    await update_channel_market(public_ch)
+    await update_channel_market(leader_ch)
 
 POSITIONS_CONFIG = {
     "ST": {"emoji": "⚽", "name": "ST", "color": discord.Color.red(), "desc": "Striker / Attacker"},
@@ -188,6 +242,7 @@ async def on_ready():
     for g in bot.guilds:
         print(f" - {g.name} (ID: {g.id})", flush=True)
         await create_roles_and_teams_auto(g)
+        await auto_sync_all_markets(g)
     print(f"==================================================", flush=True)
 
 @bot.event
@@ -213,7 +268,9 @@ async def on_member_join(member):
 
 @bot.command(name='market', aliases=['printmarket', 'postmarket'])
 async def print_market_command(ctx):
-    await send_market_embeds(ctx)
+    embeds = build_market_embeds()
+    for emb in embeds:
+        await ctx.send(embed=emb)
 
 @bot.command(name='addplayer')
 async def add_player(ctx, name: str, pos: str, club: str, price: float):
@@ -232,6 +289,7 @@ async def add_player(ctx, name: str, pos: str, club: str, price: float):
     players.append(new_p)
     save_shared_market(players)
     await ctx.send(f"✅ Added player **{name}** ({pos.upper()}) to **{club}** for €{price}M!")
+    await auto_sync_all_markets(ctx.guild)
 
 @bot.command(name='setprice')
 async def set_price(ctx, name: str, new_price: float):
@@ -248,6 +306,7 @@ async def set_price(ctx, name: str, new_price: float):
     if found:
         save_shared_market(players)
         await ctx.send(f"✅ Updated **{name}**'s price to €{new_price}M!")
+        await auto_sync_all_markets(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
 
@@ -266,6 +325,7 @@ async def set_club(ctx, name: str, *, new_club: str):
     if found:
         save_shared_market(players)
         await ctx.send(f"✅ Transferred **{name}** to **{new_club}**!")
+        await auto_sync_all_markets(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
 
