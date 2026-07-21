@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Issue Prim League - Dynamic Transfer Market (Realtime Collaborative)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0c0e14;
+            --bg-card: #141722;
+            --bg-input: #1b1f2e;
+            --accent-gold: #e5b842;
+            --accent-gold-dark: #b88f28;
+            --accent-blue: #5865f2;
+            --text-main: #f0f2f5;
+            --text-muted: #8b95a5;
+            --border-color: #262b3d;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --font-sans: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1380px;
+        }
+
+        /* Header with Logo */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            padding: 24px 32px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand-logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 10px rgba(229, 184, 66, 0.4));
+        }
+
+        .brand-title h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            letter-spacing: 0.5px;
+        }
+
+        .brand-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .stats-summary {
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat-pill {
+            background: rgba(229, 184, 66, 0.1);
+            border: 1px solid rgba(229, 184, 66, 0.3);
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            text-align: right;
+        }
+
+        .stat-pill .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-pill .value {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            font-family: var(--font-mono);
+        }
+
+        /* Leader Authentication Bar */
+        .leader-auth-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #23a55a;
+            box-shadow: 0 0 8px #23a55a;
+        }
+
+        .passcode-input-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .passcode-input-box input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        /* Action Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 380px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dark));
+            color: #111;
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(229, 184, 66, 0.3);
+        }
+
+        .btn-green {
+            background: #23a55a;
+            color: #ffffff;
+        }
+
+        .btn-green:hover {
+            background: #1b8547;
+            transform: translateY(-2px);
+        }
+
+        .btn-blue {
+            background: var(--accent-blue);
+            color: #ffffff;
+        }
+
+        .btn-blue:hover {
+            background: #4752c4;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger-sm {
+            background: rgba(242, 63, 67, 0.15);
+            color: #f23f43;
+            border: 1px solid #f23f43;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-danger-sm:hover {
+            background: #f23f43;
+            color: #ffffff;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        /* Table Card */
+        .table-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: #10121a;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 16px;
+            text-align: left;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .player-num {
+            font-weight: 800;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            width: 40px;
+        }
+
+        /* Editable Inputs */
+        input.table-input, select.table-select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        input.table-input:focus, select.table-select:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            background: #23283b;
+        }
+
+        .price-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .price-currency {
+            position: absolute;
+            left: 10px;
+            color: var(--accent-gold);
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        .price-input-wrapper input {
+            padding-left: 24px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        /* Footer Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #23a55a;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="brand-box">
+                <img src="logo.png" alt="Skill Issue Prim League Logo" class="brand-logo">
+                <div class="brand-title">
+                    <h1>SKILL ISSUE PRIM LEAGUE</h1>
+                    <p>Real-Time 3-Leader Collaborative Transfer Market</p>
+                </div>
+            </div>
+            <div class="stats-summary">
+                <div class="stat-pill">
+                    <div class="label">Total Players</div>
+                    <div class="value" id="total-players-count">0</div>
+                </div>
+                <div class="stat-pill">
+                    <div class="label">Total Market Value</div>
+                    <div class="value" id="total-market-value">€0M</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Leader Auth Bar -->
+        <div class="leader-auth-bar">
+            <div class="auth-status">
+                <span class="status-dot"></span>
+                <span>Real-Time Sync: Active</span>
+            </div>
+            <div class="passcode-input-box">
+                <label for="leader-passcode"><strong>🔑 Leader Key:</strong></label>
+                <input type="password" id="leader-passcode" value="PRIM-LEADER-2026">
+                <button class="btn btn-outline" id="unlock-btn"><i class="fa-solid fa-key"></i> Verified Leader</button>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="Search player name, club, or position...">
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-green" id="add-player-btn">
+                    <i class="fa-solid fa-user-plus"></i> + Add New Player
+                </button>
+                <button class="btn btn-gold" id="save-sync-btn">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Sync Edits Live
+                </button>
+                <button class="btn btn-blue" id="discord-publish-btn">
+                    <i class="fa-brands fa-discord"></i> Publish to Discord
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Player Name</th>
+                            <th>Club Name</th>
+                            <th>Position</th>
+                            <th>Market Value (€)</th>
+                            <th>Status</th>
+                            <th style="width: 60px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-table-body">
+                        <!-- Dynamic player rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i class="fa-solid fa-circle-check"></i> <span id="toast-msg">Data synced live for all leaders!</span>
+    </div>
+
+    <script>
+        let players = [];
+        let isFocusedOnInput = false;
+
+        async function fetchSharedPlayers() {
+            if (isFocusedOnInput) return; // Don't interrupt active typing
+
+            try {
+                const res = await fetch('/api/players');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        players = data;
+                        renderTable(document.getElementById("search-input").value);
+                    }
+                }
+            } catch (err) {
+                console.log("Realtime fetch info:", err);
+            }
+        }
+
+        function renderTable(filterQuery = "") {
+            const tbody = document.getElementById("player-table-body");
+            tbody.innerHTML = "";
+
+            let totalValue = 0;
+            const filtered = players.filter(p => 
+                (p.name || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+                (p.club || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+                (p.pos || "").toLowerCase().includes(filterQuery.toLowerCase())
+            );
+
+            filtered.forEach((p, index) => {
+                totalValue += Number(p.price) || 0;
+                p.num = index + 1; // Re-index dynamically
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="player-num">${p.num}</td>
+                    <td>
+                        <input type="text" class="table-input" value="${p.name || ''}" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'name', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="table-input" value="${p.club || 'Free Agent'}" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'club', this.value)">
+                    </td>
+                    <td>
+                        <select class="table-select" onchange="updatePlayer(${p.id}, 'pos', this.value)">
+                            <option value="GK" ${p.pos === 'GK' ? 'selected' : ''}>GK - Goalkeeper</option>
+                            <option value="CB" ${p.pos === 'CB' ? 'selected' : ''}>CB - Defender</option>
+                            <option value="DM" ${p.pos === 'DM' ? 'selected' : ''}>DM - Midfielder</option>
+                            <option value="CM" ${p.pos === 'CM' ? 'selected' : ''}>CM - Playmaker</option>
+                            <option value="ST" ${p.pos === 'ST' ? 'selected' : ''}>ST - Striker</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="price-input-wrapper">
+                            <span class="price-currency">€</span>
+                            <input type="number" class="table-input" value="${p.price || 0}" min="0" step="500000" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'price', this.value)">
+                        </div>
+                    </td>
+                    <td>
+                        <select class="table-select" onchange="updatePlayer(${p.id}, 'status', this.value)">
+                            <option value="Signed" ${p.status === 'Signed' ? 'selected' : ''}>Signed</option>
+                            <option value="Free Agent" ${p.status === 'Free Agent' ? 'selected' : ''}>Free Agent</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger-sm" onclick="removePlayer(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("total-players-count").textContent = players.length;
+            document.getElementById("total-market-value").textContent = "€" + (totalValue / 1000000).toFixed(1) + "M";
+        }
+
+        async function updatePlayer(id, key, val) {
+            const p = players.find(x => x.id === id);
+            if (p) {
+                p[key] = key === 'price' ? Number(val) : val;
+                if (key === 'club') {
+                    p.status = val.toLowerCase().includes("free") ? "Free Agent" : "Signed";
+                }
+                await syncToBackend();
+            }
+        }
+
+        async function addNewPlayer() {
+            const newId = players.length > 0 ? Math.max(...players.map(p => p.id || 0)) + 1 : 1;
+            const newPlayer = {
+                id: newId,
+                num: players.length + 1,
+                name: `New Player ${players.length + 1}`,
+                club: "Free Agent",
+                pos: "CM",
+                price: 5000000,
+                status: "Free Agent"
+            };
+            players.push(newPlayer);
+            renderTable(document.getElementById("search-input").value);
+            await syncToBackend();
+            showToast(`Added Player #${players.length}! Total players: ${players.length}`);
+        }
+
+        async function removePlayer(id) {
+            if (confirm("Are you sure you want to remove this player?")) {
+                players = players.filter(p => p.id !== id);
+                renderTable(document.getElementById("search-input").value);
+                await syncToBackend();
+                showToast("Player removed!");
+            }
+        }
+
+        async function syncToBackend() {
+            const passcode = document.getElementById("leader-passcode").value;
+            try {
+                const res = await fetch('/api/players/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passcode, players })
+                });
+
+                if (res.ok) {
+                    showToast("⚡ Real-time edit synced for all 3 Leaders!");
+                } else {
+                    const err = await res.json();
+                    showToast("⚠️ " + (err.error || "Invalid Passcode"));
+                }
+            } catch (err) {
+                console.log("Error syncing:", err);
+            }
+        }
+
+        document.getElementById("add-player-btn").addEventListener("click", addNewPlayer);
+        document.getElementById("search-input").addEventListener("input", (e) => renderTable(e.target.value));
+        document.getElementById("save-sync-btn").addEventListener("click", syncToBackend);
+        document.getElementById("discord-publish-btn").addEventListener("click", () => {
+            showToast("🚀 Roster updated! Type !market in Discord to print!");
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toast-msg").textContent = msg;
+            toast.classList.remove("hidden");
+            setTimeout(() => toast.classList.add("hidden"), 3500);
+        }
+
+        fetchSharedPlayers();
+        setInterval(fetchSharedPlayers, 1500);
+    </script>
+</body>
+</html>

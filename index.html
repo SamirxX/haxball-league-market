@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haxball Prim League - Discord Server & League Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-badge">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>SKL PRIM LEAGUE</h2>
+                    <span>Haxball Discord Suite</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="discord-preview">
+                    <i class="fa-brands fa-discord"></i> Discord Server Layout
+                </button>
+                <button class="nav-btn" data-tab="league-standings">
+                    <i class="fa-solid fa-list-ol"></i> Live Standings & Results
+                </button>
+                <button class="nav-btn" data-tab="bot-commands">
+                    <i class="fa-solid fa-robot"></i> Discord Bot Commands
+                </button>
+                <button class="nav-btn" data-tab="role-matrix">
+                    <i class="fa-solid fa-shield-halved"></i> Roles & Permissions
+                </button>
+                <button class="nav-btn" data-tab="setup-guide">
+                    <i class="fa-solid fa-book-bookmark"></i> Setup Blueprint
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="server-status">
+                    <span class="status-dot online"></span>
+                    <span>Haxball Bot: Ready</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h1 id="page-title">Discord Server Layout Visualizer</h1>
+                    <p id="page-subtitle">Preview the structure, categories, and channels designed for competitive Haxball leagues</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" id="export-json-btn">
+                        <i class="fa-solid fa-download"></i> Export Server Config
+                    </button>
+                    <button class="btn btn-primary" id="copy-template-btn">
+                        <i class="fa-solid fa-copy"></i> Copy Setup Blueprint
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tab 1: Discord Preview -->
+            <section id="tab-discord-preview" class="tab-content active">
+                <div class="discord-mockup-wrapper">
+                    <!-- Left: Channel Tree -->
+                    <div class="discord-channels-pane">
+                        <div class="server-header-bar">
+                            <i class="fa-solid fa-shield"></i>
+                            <span>SKILL ISSUE PRIM LEAGUE</span>
+                            <i class="fa-solid fa-angle-down chevron"></i>
+                        </div>
+
+                        <div class="channel-tree" id="channel-tree-container">
+                            <!-- Categories & Channels injected by app.js -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Channel Detail Inspector -->
+                    <div class="discord-inspector-pane">
+                        <div class="inspector-header">
+                            <h3 id="inspector-channel-name"><i class="fa-solid fa-hashtag"></i> match-reporting</h3>
+                            <span class="channel-type-tag" id="inspector-channel-type">Text Channel</span>
+                        </div>
+                        <p class="channel-desc" id="inspector-channel-desc">Captains post official match scores here using format: !report @TeamA 3 - 1 @TeamB</p>
+
+                        <div class="inspector-card">
+                            <h4><i class="fa-solid fa-lock"></i> Channel Permissions</h4>
+                            <div class="permission-tags" id="inspector-permissions">
+                                <!-- Tags injected by JS -->
+                            </div>
+                        </div>
+
+                        <div class="inspector-card">
+                            <h4><i class="fa-solid fa-terminal"></i> Sample Channel View / Auto-Post</h4>
+                            <div class="chat-preview-box" id="inspector-chat-preview">
+                                <!-- Chat preview -->
+                            </div>
+                        </div>
+
+                        <div class="inspector-card">
+                            <h4><i class="fa-solid fa-lightbulb"></i> Best Practice Recommendation</h4>
+                            <p id="inspector-tip">Keep this channel strictly locked to Captains and Referees to prevent spam and maintain verified match logs.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 2: League Standings & Simulator -->
+            <section id="tab-league-standings" class="tab-content">
+                <div class="grid-2col">
+                    <!-- Standings Table -->
+                    <div class="card card-wide">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-ranking-star"></i> Season 1 - Division 1 Standings</h3>
+                            <button class="btn btn-sm btn-outline" id="reset-stats-btn"><i class="fa-solid fa-rotate-left"></i> Reset Stats</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="standings-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Team</th>
+                                        <th>MP</th>
+                                        <th>W</th>
+                                        <th>D</th>
+                                        <th>L</th>
+                                        <th>GF</th>
+                                        <th>GA</th>
+                                        <th>GD</th>
+                                        <th>PTS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standings-tbody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Match Score Reporter Simulator -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-gamepad"></i> Submit Match Result</h3>
+                        </div>
+                        <form id="match-report-form" class="match-form">
+                            <div class="form-group">
+                                <label for="home-team-select">Home Team</label>
+                                <select id="home-team-select" required></select>
+                            </div>
+                            <div class="score-input-row">
+                                <div class="form-group">
+                                    <label>Home Score</label>
+                                    <input type="number" id="home-score" min="0" max="15" value="3" required>
+                                </div>
+                                <span class="vs-divider">VS</span>
+                                <div class="form-group">
+                                    <label>Away Score</label>
+                                    <input type="number" id="away-score" min="0" max="15" value="1" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="away-team-select">Away Team</label>
+                                <select id="away-team-select" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="match-mvp">Match MVP (Optional)</label>
+                                <input type="text" id="match-mvp" placeholder="e.g. @striker99">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fa-solid fa-paper-plane"></i> Submit Official Score
+                            </button>
+                        </form>
+
+                        <div class="recent-matches-box">
+                            <h4>Recent Match Feed</h4>
+                            <ul class="match-feed-list" id="match-feed-list">
+                                <!-- Dynamic matches -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 3: Bot Commands -->
+            <section id="tab-bot-commands" class="tab-content">
+                <div class="commands-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-users"></i> Player & Team Commands</h3>
+                        </div>
+                        <div class="command-list">
+                            <div class="command-item">
+                                <div class="cmd-syntax">!register [Haxball_Nick]</div>
+                                <div class="cmd-desc">Registers a user into the league database and assigns the @Free Agent role.</div>
+                            </div>
+                            <div class="command-item">
+                                <div class="cmd-syntax">!createteam [Team_Name] [Tag]</div>
+                                <div class="cmd-desc">Creates a new team entry, creates team role & captain permissions.</div>
+                            </div>
+                            <div class="command-item">
+                                <div class="cmd-syntax">!sign @Player</div>
+                                <div class="cmd-desc">Captains sign a free agent to their team roster.</div>
+                            </div>
+                            <div class="command-item">
+                                <div class="cmd-syntax">!release @Player</div>
+                                <div class="cmd-desc">Releases a player back to the free agents market.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-trophy"></i> Match & League Commands</h3>
+                        </div>
+                        <div class="command-list">
+                            <div class="command-item">
+                                <div class="cmd-syntax">!report @Home [score] - [score] @Away</div>
+                                <div class="cmd-desc">Submits match score, updates league table, and records goal diff.</div>
+                            </div>
+                            <div class="command-item">
+                                <div class="cmd-syntax">!standings</div>
+                                <div class="cmd-desc">Outputs the live league standings table directly into Discord chat.</div>
+                            </div>
+                            <div class="command-item">
+                                <div class="cmd-syntax">!roster @Team</div>
+                                <div class="cmd-desc">Displays current active roster and squad list for a team.</div>
+                            </div>
+                            <div class="command-item">
+                                <div class="cmd-syntax">!freeagents</div>
+                                <div class="cmd-desc">Lists all available free agents ready for team contracts.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-wide">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-code"></i> Python Bot Script Preview (`haxball_bot.py`)</h3>
+                            <button class="btn btn-sm btn-outline" id="copy-bot-code-btn"><i class="fa-solid fa-copy"></i> Copy Bot Code</button>
+                        </div>
+                        <pre class="code-block" id="python-bot-code"><code># Complete Discord.py Haxball League Bot snippet loaded in JS</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 4: Roles & Permissions -->
+            <section id="tab-role-matrix" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-users-gear"></i> Role Hierarchy & Permissions Matrix</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="role-table">
+                            <thead>
+                                <tr>
+                                    <th>Role Name</th>
+                                    <th>Color</th>
+                                    <th>Hoist (Display Separate)</th>
+                                    <th>Key Permissions</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="role-matrix-tbody">
+                                <!-- Roles injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 5: Setup Blueprint -->
+            <section id="tab-setup-guide" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-clipboard-list"></i> Step-by-Step Server Creation Guide</h3>
+                    </div>
+                    <div class="guide-steps">
+                        <div class="guide-step">
+                            <div class="step-num">1</div>
+                            <div class="step-info">
+                                <h4>Create Categories & Roles</h4>
+                                <p>Set up the exact category and role structure provided in the Visualizer tab. Assign color hex codes to differentiate League Admins, Captains, and Teams.</p>
+                            </div>
+                        </div>
+                        <div class="guide-step">
+                            <div class="step-num">2</div>
+                            <div class="step-info">
+                                <h4>Configure Channel Permissions</h4>
+                                <p>Restrict <code>#announcements</code> and <code>#standings</code> to read-only for regular players. Give Captains permission to post in <code>#match-reporting</code> and <code>#transfers</code>.</p>
+                            </div>
+                        </div>
+                        <div class="guide-step">
+                            <div class="step-num">3</div>
+                            <div class="step-info">
+                                <h4>Deploy the Haxball League Bot</h4>
+                                <p>Install <code>discord.py</code> on your computer or VPS, insert your Bot Token, and run <code>python bot.py</code> to handle automatic standings and match reports.</p>
+                            </div>
+                        </div>
+                        <div class="guide-step">
+                            <div class="step-num">4</div>
+                            <div class="step-info">
+                                <h4>Set Up Haxball Headless Room (Optional)</h4>
+                                <p>Integrate a Haxball Headless Host script to automatically broadcast room links to <code>#haxball-links</code> whenever matches are ready to be played!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i class="fa-solid fa-circle-check"></i> <span id="toast-message">Copied to clipboard!</span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

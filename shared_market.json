@@ -1,0 +1,182 @@
+[
+    {
+        "id": 1,
+        "num": 1,
+        "name": "samir",
+        "club": "Apex Predators",
+        "pos": "ST",
+        "price": 15000000,
+        "status": "Signed"
+    },
+    {
+        "id": 2,
+        "num": 2,
+        "name": "bellinoob",
+        "club": "Shadow Strikers",
+        "pos": "CM",
+        "price": 12500000,
+        "status": "Signed"
+    },
+    {
+        "id": 3,
+        "num": 3,
+        "name": "WallKeeper",
+        "club": "Titan FC",
+        "pos": "GK",
+        "price": 9000000,
+        "status": "Signed"
+    },
+    {
+        "id": 4,
+        "num": 4,
+        "name": "ViperKing",
+        "club": "Viper United",
+        "pos": "ST",
+        "price": 11000000,
+        "status": "Signed"
+    },
+    {
+        "id": 5,
+        "num": 5,
+        "name": "CyberSniper",
+        "club": "Cyber Knights",
+        "pos": "DM",
+        "price": 8500000,
+        "status": "Signed"
+    },
+    {
+        "id": 6,
+        "num": 6,
+        "name": "GhostFreek",
+        "club": "Apex Predators",
+        "pos": "DM",
+        "price": 10000000,
+        "status": "Signed"
+    },
+    {
+        "id": 7,
+        "num": 7,
+        "name": "BlazeRider",
+        "club": "Shadow Strikers",
+        "pos": "ST",
+        "price": 14000000,
+        "status": "Signed"
+    },
+    {
+        "id": 8,
+        "num": 8,
+        "name": "IronShield",
+        "club": "Titan FC",
+        "pos": "CB",
+        "price": 7500000,
+        "status": "Signed"
+    },
+    {
+        "id": 9,
+        "num": 9,
+        "name": "ZeroMatrix",
+        "club": "Free Agent",
+        "pos": "CM",
+        "price": 6000000,
+        "status": "Free Agent"
+    },
+    {
+        "id": 10,
+        "num": 10,
+        "name": "NeonFlash",
+        "club": "Viper United",
+        "pos": "GK",
+        "price": 8000000,
+        "status": "Signed"
+    },
+    {
+        "id": 11,
+        "num": 11,
+        "name": "AlphaWolf",
+        "club": "Cyber Knights",
+        "pos": "ST",
+        "price": 13500000,
+        "status": "Signed"
+    },
+    {
+        "id": 12,
+        "num": 12,
+        "name": "PixelGod",
+        "club": "Apex Predators",
+        "pos": "CM",
+        "price": 11500000,
+        "status": "Signed"
+    },
+    {
+        "id": 13,
+        "num": 13,
+        "name": "Phantom99",
+        "club": "Free Agent",
+        "pos": "ST",
+        "price": 5500000,
+        "status": "Free Agent"
+    },
+    {
+        "id": 14,
+        "num": 14,
+        "name": "TurboShot",
+        "club": "Shadow Strikers",
+        "pos": "CB",
+        "price": 9200000,
+        "status": "Signed"
+    },
+    {
+        "id": 15,
+        "num": 15,
+        "name": "AeroWing",
+        "club": "Titan FC",
+        "pos": "ST",
+        "price": 10500000,
+        "status": "Signed"
+    },
+    {
+        "id": 16,
+        "num": 16,
+        "name": "VortexDM",
+        "club": "Viper United",
+        "pos": "DM",
+        "price": 7800000,
+        "status": "Signed"
+    },
+    {
+        "id": 17,
+        "num": 17,
+        "name": "TitaniumGK",
+        "club": "Cyber Knights",
+        "pos": "GK",
+        "price": 8800000,
+        "status": "Signed"
+    },
+    {
+        "id": 18,
+        "num": 18,
+        "name": "SonicBounce",
+        "club": "Free Agent",
+        "pos": "CM",
+        "price": 4800000,
+        "status": "Free Agent"
+    },
+    {
+        "id": 19,
+        "num": 19,
+        "name": "HyperDash",
+        "club": "Apex Predators",
+        "pos": "CB",
+        "price": 9800000,
+        "status": "Signed"
+    },
+    {
+        "id": 20,
+        "num": 20,
+        "name": "Overdrive",
+        "club": "Shadow Strikers",
+        "pos": "DM",
+        "price": 10200000,
+        "status": "Signed"
+    }
+]
