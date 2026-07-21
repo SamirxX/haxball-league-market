@@ -82,6 +82,46 @@ async def on_ready():
         print(f" - {g.name} (ID: {g.id})", flush=True)
     print(f"==================================================", flush=True)
 
+@bot.event
+async def on_member_join(member):
+    guild = member.guild
+    print(f"👤 New member joined: {member.name} in {guild.name}", flush=True)
+
+    # 1. Assign Member / League Player Role Automatically
+    member_role = discord.utils.get(guild.roles, name="Member") or \
+                  discord.utils.get(guild.roles, name="League Player") or \
+                  discord.utils.get(guild.roles, name="Free Agent")
+    
+    if not member_role and guild.me.guild_permissions.manage_roles:
+        try:
+            member_role = await guild.create_role(name="Member", color=discord.Color.green())
+        except Exception:
+            pass
+
+    if member_role:
+        try:
+            await member.add_roles(member_role)
+            print(f"✅ Assigned {member_role.name} role to {member.name}", flush=True)
+        except Exception as e:
+            print(f"Could not assign role: {e}", flush=True)
+
+    # 2. Find Welcome Channel
+    welcome_ch = discord.utils.get(guild.text_channels, name="welcome") or \
+                 discord.utils.get(guild.text_channels, name="general") or \
+                 discord.utils.get(guild.text_channels, name="chat") or \
+                 guild.text_channels[0]
+
+    if welcome_ch:
+        # Extra bold text message with user mention
+        msg = f"# ⚽ **WELCOME {member.mention}! I WISH YOU AIN'T A BIG NOOB!** 🔥"
+        await welcome_ch.send(msg)
+
+@bot.command(name='testwelcome')
+@commands.has_permissions(administrator=True)
+async def test_welcome(ctx):
+    """Test the welcome message manually: !testwelcome"""
+    await on_member_join(ctx.author)
+
 @bot.command(name='market', aliases=['printmarket', 'postmarket'])
 async def print_market_command(ctx):
     await send_market_embeds(ctx)
@@ -94,6 +134,7 @@ async def help_league(ctx):
         color=discord.Color.gold()
     )
     embed.add_field(name="📊 !market or !printmarket", value="Prints the live Transfer Market table.", inline=False)
+    embed.add_field(name="👋 !testwelcome", value="Tests the member welcome message & auto-role assignment.", inline=False)
     embed.set_footer(text="Haxball Collaborative League Manager")
     await ctx.send(embed=embed)
 
