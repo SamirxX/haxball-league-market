@@ -34,6 +34,14 @@ def save_shared_market(data):
     except Exception as e:
         print("Error saving shared_market.json:", e)
 
+def format_price(raw_price):
+    p = float(raw_price)
+    # If price is in single/double digits (e.g. 10.3), treat as millions
+    if p < 1000:
+        return f"€{p:.1f}M"
+    else:
+        return f"€{(p/1000000.0):.1f}M"
+
 def is_leader(user):
     if isinstance(user, discord.Member):
         if user.guild_permissions.administrator:
@@ -53,7 +61,11 @@ def build_market_embeds():
         )
         return [embed]
 
-    total_val = sum(float(p.get("price", 0)) for p in players) / 1000000.0
+    total_val = 0.0
+    for p in players:
+        p_val = float(p.get("price", 0))
+        total_val += p_val if p_val < 1000 else (p_val / 1000000.0)
+
     chunk_size = 10
     chunks = [players[i:i + chunk_size] for i in range(0, len(players), chunk_size)]
     total_parts = len(chunks)
@@ -69,7 +81,7 @@ def build_market_embeds():
         table_str = "```\n#   PLAYER          POS  CLUB            VALUE\n"
         table_str += "------------------------------------------------\n"
         for p in chunk:
-            price_fmt = f"€{(float(p.get('price', 0))/1000000.0):.1f}M"
+            price_fmt = format_price(p.get('price', 0))
             p_num = p.get('num', idx)
             table_str += f"{p_num:<3} {p.get('name', 'N/A'):<15} {p.get('pos', 'CM'):<4} {p.get('club', 'Free Agent'):<15} {price_fmt:<7}\n"
         table_str += "```"
@@ -85,15 +97,19 @@ def build_market_embeds():
     return embeds
 
 async def update_unified_market_channel(guild):
-    # Single #market channel for everyone
-    market_ch = discord.utils.get(guild.text_channels, name="market") or \
-                discord.utils.get(guild.text_channels, name="transfer-market")
+    # Get transfer hub category or general
+    transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
+    market_ch = discord.utils.get(guild.text_channels, name="『🛒』market") or \
+                discord.utils.get(guild.text_channels, name="market")
+    
     if not market_ch:
-        market_ch = await guild.create_text_channel("market")
+        market_ch = await guild.create_text_channel("『🛒』market", category=transfer_cat)
+    elif transfer_cat and market_ch.category != transfer_cat:
+        await market_ch.edit(category=transfer_cat)
 
     embeds = build_market_embeds()
 
-    # Clean old bot messages and re-post clean link + market
+    # Clean old bot messages
     async for msg in market_ch.history(limit=20):
         if msg.author == bot.user:
             try:
@@ -101,13 +117,44 @@ async def update_unified_market_channel(guild):
             except Exception:
                 pass
 
-    # Post link header
     header_msg = f"🌐 **LIVE INTERACTIVE MARKET WEB LINK:**\n<{GITHUB_PAGES_URL}>\n\n*(Passcode for Leaders: `PRIM-LEADER-2026`)*\n👇 **LIVE TRANSFER MARKET TABLE (Auto-Refreshes Below):**"
     await market_ch.send(header_msg)
 
-    # Post embedded tables
     for emb in embeds:
         await market_ch.send(embed=emb)
+
+async def organize_server_structure(guild):
+    # Ensure uncategorized channels are neatly in correct categories matching special font style
+    general_cat = discord.utils.get(guild.categories, name="▬▬▬ General ▬▬▬")
+    transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
+    league_cat = discord.utils.get(guild.categories, name="▬▬▬ Premier League ▬▬▬")
+
+    # Rename / move uncategorized channels
+    welcome_ch = discord.utils.get(guild.text_channels, name="『👋』welcome") or discord.utils.get(guild.text_channels, name="welcome")
+    if welcome_ch and general_cat and welcome_ch.category != general_cat:
+        await welcome_ch.edit(name="『👋』welcome", category=general_cat)
+
+    roles_ch = discord.utils.get(guild.text_channels, name="『👀』roles") or discord.utils.get(guild.text_channels, name="roles")
+    if roles_ch and general_cat and roles_ch.category != general_cat:
+        await roles_ch.edit(name="『👀』roles", category=general_cat)
+
+    teams_ch = discord.utils.get(guild.text_channels, name="『🛡️』teams") or discord.utils.get(guild.text_channels, name="teams")
+    if teams_ch and league_cat and teams_ch.category != league_cat:
+        await teams_ch.edit(name="『🛡️』teams", category=league_cat)
+
+    # Ensure Results channel has match announcement guide
+    results_ch = discord.utils.get(guild.text_channels, name="『📈』results") or discord.utils.get(guild.text_channels, name="results")
+    if results_ch:
+        async for msg in results_ch.history(limit=5):
+            if msg.author == bot.user:
+                break
+        else:
+            emb = discord.Embed(
+                title="🏆 **OFFICIAL MATCH RESULTS ANNOUNCEMENTS**",
+                description="Post official league match scores & results in this channel!\n\n**Format Example:**\n`TE FC 3 - 1 Petrojet`\n⚽ Goals: ibra (2), PlayerX (1)\n🧤 Clean Sheet: WallKeeper",
+                color=discord.Color.green()
+            )
+            await results_ch.send(embed=emb)
 
 async def setup_leader_headquarters(guild):
     overwrites = {
@@ -126,30 +173,25 @@ async def setup_leader_headquarters(guild):
     cmd_ch = discord.utils.get(guild.text_channels, name="leader-commands")
     if not cmd_ch:
         cmd_ch = await guild.create_text_channel("leader-commands", category=cat, sync_permissions=True)
-    else:
-        await cmd_ch.edit(category=cat, sync_permissions=True)
 
-    # 2. #leader-commands-list (Manual)
+    # 2. #leader-commands-list
     guide_ch = discord.utils.get(guild.text_channels, name="leader-commands-list")
     if not guide_ch:
         guide_ch = await guild.create_text_channel("leader-commands-list", category=cat, sync_permissions=True)
-    else:
-        await guide_ch.edit(category=cat, sync_permissions=True)
 
-    # Post updated guide
     async for msg in guide_ch.history(limit=5):
         if msg.author == bot.user:
             break
     else:
         embed = discord.Embed(
             title="👑 **OFFICIAL LEADER & ADMIN COMMANDS MANUAL**",
-            description="Use these commands in `#leader-commands` to update the market 24/7. All changes automatically update `#market`!",
+            description="Use these commands in `#leader-commands` to update the market 24/7. All changes automatically update `#『🛒』market`!",
             color=0x9B59B6
         )
-        embed.add_field(name="1️⃣ `!addplayer <Name> <Pos> <Club> <PriceInM>`", value="Add a player to the market. Example: `!addplayer Ronaldo ST Zamalek 15`", inline=False)
+        embed.add_field(name="1️⃣ `!addplayer <Name> <Pos> <Club> <PriceInM>`", value="Add a player. Example: `!addplayer Ronaldo ST Zamalek 15`", inline=False)
         embed.add_field(name="2️⃣ `!setprice <PlayerName> <NewPriceInM>`", value="Update player price. Example: `!setprice ibra 20`", inline=False)
         embed.add_field(name="3️⃣ `!setclub <PlayerName> <NewClub>`", value="Transfer player to club. Example: `!setclub Messi Petrojet`", inline=False)
-        embed.add_field(name="4️⃣ `!createteam <TeamName> <CaptainName>`", value="Create team card & private team chat channel! Example: `!createteam RealMadrid Samir`", inline=False)
+        embed.add_field(name="4️⃣ `!createteam <TeamName> <Captain>`", value="Create team, role, private team chat, and post announcement!", inline=False)
         embed.add_field(name="5️⃣ `!market`", value="Manually print current market table.", inline=False)
         embed.set_footer(text="Leader Passcode Key for Web Page: PRIM-LEADER-2026")
         await guide_ch.send(embed=embed)
@@ -195,36 +237,29 @@ class PositionRoleView(discord.ui.View):
             self.add_item(PositionButton(p_key, p_data))
 
 async def setup_roles_and_teams(guild):
-    # Roles channel with multi-selection
-    roles_ch = discord.utils.get(guild.text_channels, name="roles")
-    if not roles_ch:
-        roles_ch = await guild.create_text_channel("roles")
+    roles_ch = discord.utils.get(guild.text_channels, name="『👀』roles") or discord.utils.get(guild.text_channels, name="roles")
+    if roles_ch:
+        for p_key, p_data in POSITIONS_CONFIG.items():
+            if not discord.utils.get(guild.roles, name=p_data["name"]):
+                await guild.create_role(name=p_data["name"], color=p_data["color"], mentionable=True)
 
-    for p_key, p_data in POSITIONS_CONFIG.items():
-        if not discord.utils.get(guild.roles, name=p_data["name"]):
-            await guild.create_role(name=p_data["name"], color=p_data["color"], mentionable=True)
-
-    async for msg in roles_ch.history(limit=10):
-        if msg.author == bot.user and msg.embeds and "Select Your Position" in (msg.embeds[0].title or ""):
-            break
-    else:
-        embed = discord.Embed(
-            title="⚽ **Select Your Position(s)!**",
-            description="Click the buttons below to pick your positions (**You can select more than one!**):\n\n⚽ = **ST**\n🧙‍♂️ = **CM**\n🧱 = **CB**\n🧤 = **GK**",
-            color=discord.Color.gold()
-        )
-        await roles_ch.send(embed=embed, view=PositionRoleView())
-
-    # Teams public channel
-    teams_ch = discord.utils.get(guild.text_channels, name="teams")
-    if not teams_ch:
-        teams_ch = await guild.create_text_channel("teams")
+        async for msg in roles_ch.history(limit=10):
+            if msg.author == bot.user and msg.embeds and "Select Your Position" in (msg.embeds[0].title or ""):
+                break
+        else:
+            embed = discord.Embed(
+                title="⚽ **Select Your Position(s)!**",
+                description="Click the buttons below to pick your positions (**You can select more than one!**):\n\n⚽ = **ST**\n🧙‍♂️ = **CM**\n🧱 = **CB**\n🧤 = **GK**",
+                color=discord.Color.gold()
+            )
+            await roles_ch.send(embed=embed, view=PositionRoleView())
 
 @bot.event
 async def on_ready():
     print(f"🤖 Bot online as: {bot.user.name}", flush=True)
     bot.add_view(PositionRoleView())
     for g in bot.guilds:
+        await organize_server_structure(g)
         await setup_leader_headquarters(g)
         await setup_roles_and_teams(g)
         await update_unified_market_channel(g)
@@ -242,8 +277,8 @@ async def on_member_join(member):
         except Exception:
             pass
 
-    welcome_ch = discord.utils.get(guild.text_channels, name="welcome") or \
-                 discord.utils.get(guild.text_channels, name="general") or \
+    welcome_ch = discord.utils.get(guild.text_channels, name="『👋』welcome") or \
+                 discord.utils.get(guild.text_channels, name="『💬』general") or \
                  guild.text_channels[0]
 
     if welcome_ch:
@@ -285,19 +320,25 @@ async def create_team(ctx, team_name: str, captain: str):
     if not team_ch:
         team_ch = await guild.create_text_channel(chan_name, category=cat, overwrites=overwrites)
 
-    # 3. Post Team Card in #teams
-    teams_ch = discord.utils.get(guild.text_channels, name="teams")
+    # 3. Post Team Card in #『🛡️』teams
+    teams_ch = discord.utils.get(guild.text_channels, name="『🛡️』teams") or discord.utils.get(guild.text_channels, name="teams")
     if teams_ch:
         embed = discord.Embed(
-            title=f"🛡️ {team_name}",
+            title=f"🛡️ NEW TEAM REGISTERED: {team_name}",
             description=f"**Captain:** `{captain}`\n**Role:** {team_role.mention}\n**Private Chat:** {team_ch.mention}",
-            color=discord.Color.blue(),
+            color=discord.Color.gold(),
             timestamp=datetime.datetime.now()
         )
-        embed.set_footer(text="Skill Issue Prim League | Registered Team Profile")
+        embed.set_footer(text="Skill Issue Prim League | New Team Announcement")
         await teams_ch.send(embed=embed)
 
-    await ctx.send(f"✅ Team **{team_name}** created! Role {team_role.mention} & Private Channel {team_ch.mention} ready!")
+    # 4. Broadcast announcement to #『💬』general when new team joins
+    gen_ch = discord.utils.get(guild.text_channels, name="『💬』general") or discord.utils.get(guild.text_channels, name="general")
+    if gen_ch:
+        announcement = f"🎉 ⚽ **NEW TEAM JOINED THE LEAGUE!** ⚽ 🎉\nWelcome **{team_name}** to **Skill Issue Premier League**! Captained by `{captain}`! {team_role.mention}"
+        await gen_ch.send(announcement)
+
+    await ctx.send(f"✅ Team **{team_name}** created! Role {team_role.mention}, Announcement sent in {gen_ch.mention}, & Private Chat {team_ch.mention} ready!")
 
 @bot.command(name='addplayer')
 async def add_player(ctx, name: str, pos: str, club: str, price: float):
@@ -311,11 +352,11 @@ async def add_player(ctx, name: str, pos: str, club: str, price: float):
         "name": name,
         "pos": pos.upper(),
         "club": club,
-        "price": price * 1000000
+        "price": price if price < 1000 else (price * 1000000)
     }
     players.append(new_p)
     save_shared_market(players)
-    await ctx.send(f"✅ Added player **{name}** ({pos.upper()}) to **{club}** for €{price}M!")
+    await ctx.send(f"✅ Added player **{name}** ({pos.upper()}) to **{club}** for {format_price(price)}!")
     await update_unified_market_channel(ctx.guild)
 
 @bot.command(name='setprice')
@@ -327,12 +368,12 @@ async def set_price(ctx, name: str, new_price: float):
     found = False
     for p in players:
         if p.get("name", "").lower() == name.lower():
-            p["price"] = new_price * 1000000
+            p["price"] = new_price if new_price < 1000 else (new_price * 1000000)
             found = True
             break
     if found:
         save_shared_market(players)
-        await ctx.send(f"✅ Updated **{name}**'s price to €{new_price}M!")
+        await ctx.send(f"✅ Updated **{name}**'s price to {format_price(new_price)}!")
         await update_unified_market_channel(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
