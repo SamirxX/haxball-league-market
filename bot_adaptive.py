@@ -124,7 +124,7 @@ async def update_unified_market_channel(guild):
             except Exception:
                 pass
 
-    header_msg = f"🌐 **LIVE INTERACTIVE MARKET WEB LINK:**\n<{GITHUB_PAGES_URL}>\n\n*(Passcode for Leaders: `PRIM-LEADER-2026`)*\n👇 **LIVE TRANSFER MARKET TABLE (Auto-Refreshes on Web Edit):**"
+    header_msg = f"🌐 **LIVE INTERACTIVE MARKET WEB LINK:**\n<{GITHUB_PAGES_URL}>\n\n👇 **LIVE TRANSFER MARKET TABLE (Auto-Refreshes on Web Edit):**"
     await market_ch.send(header_msg)
 
     for emb in embeds:
