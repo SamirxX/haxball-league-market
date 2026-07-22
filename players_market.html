@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skill Issue Prim League - Dynamic Transfer Market (Realtime Collaborative)</title>
+    <title>Skill Issue Prim League - Dynamic Transfer Market</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,7 +13,6 @@
             --bg-input: #1b1f2e;
             --accent-gold: #e5b842;
             --accent-gold-dark: #b88f28;
-            --accent-blue: #5865f2;
             --text-main: #f0f2f5;
             --text-muted: #8b95a5;
             --border-color: #262b3d;
@@ -41,7 +40,6 @@
             max-width: 1380px;
         }
 
-        /* Header with Logo */
         header {
             display: flex;
             align-items: center;
@@ -106,7 +104,6 @@
             font-family: var(--font-mono);
         }
 
-        /* Control Panel */
         .controls-bar {
             display: flex;
             justify-content: space-between;
@@ -150,60 +147,6 @@
             border-color: var(--accent-gold);
         }
 
-        .action-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .passcode-input {
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            padding: 10px 14px;
-            border-radius: var(--radius-md);
-            color: var(--text-main);
-            font-size: 0.9rem;
-            width: 180px;
-            outline: none;
-            font-family: var(--font-mono);
-        }
-
-        .passcode-input:focus {
-            border-color: var(--accent-gold);
-        }
-
-        .btn {
-            background: var(--accent-gold);
-            color: #000;
-            font-weight: 700;
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .btn:hover {
-            background: var(--accent-gold-dark);
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: var(--bg-input);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border-color);
-            color: #fff;
-        }
-
-        /* Table Design */
         .table-wrapper {
             background: var(--bg-card);
             border-radius: var(--radius-lg);
@@ -248,85 +191,12 @@
             font-weight: 600;
             width: 50px;
         }
-
-        .table-input, .table-select {
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            width: 100%;
-            outline: none;
-            font-family: var(--font-sans);
-        }
-
-        .table-input:focus, .table-select:focus {
-            border-color: var(--accent-gold);
-        }
-
-        .price-input-wrapper {
-            display: flex;
-            align-items: center;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding-left: 10px;
-        }
-
-        .price-currency {
+        
+        .price-text {
             color: var(--accent-gold);
             font-family: var(--font-mono);
             font-weight: 700;
-            font-size: 0.95rem;
         }
-
-        .price-input-wrapper .table-input {
-            border: none;
-            background: transparent;
-            font-family: var(--font-mono);
-            color: var(--accent-gold);
-            font-weight: 600;
-        }
-
-        .btn-danger-sm {
-            background: rgba(235, 87, 87, 0.15);
-            color: #eb5757;
-            border: 1px solid rgba(235, 87, 87, 0.3);
-            padding: 6px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-danger-sm:hover {
-            background: #eb5757;
-            color: #fff;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--bg-card);
-            border: 1px solid var(--accent-gold);
-            color: var(--text-main);
-            padding: 14px 24px;
-            border-radius: var(--radius-md);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 100;
-            transition: opacity 0.3s ease;
-        }
-
-        .toast i {
-            color: var(--accent-gold);
-            font-size: 1.2rem;
-        }
-
-        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -338,7 +208,7 @@
                 <img src="logo.png" alt="Skill Issue Prim League Logo" class="brand-logo" onerror="this.src='https://i.imgur.com/8Q9Z5bX.png'">
                 <div class="brand-title">
                     <h1>SKILL ISSUE PRIM LEAGUE</h1>
-                    <p>Official Collaborative Transfer Market Roster</p>
+                    <p>Official Transfer Market Roster</p>
                 </div>
             </div>
             <div class="stats-summary">
@@ -359,12 +229,6 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="search-input" class="search-input" placeholder="Search player, position, or club...">
             </div>
-            <div class="action-group">
-                <input type="password" id="leader-passcode" class="passcode-input" placeholder="Leader Passcode" value="">
-                <button class="btn" id="add-player-btn"><i class="fa-solid fa-plus"></i> Add Player</button>
-                <button class="btn btn-secondary" id="save-sync-btn"><i class="fa-solid fa-rotate"></i> Sync Live</button>
-                <button class="btn btn-secondary" id="discord-publish-btn"><i class="fa-brands fa-discord"></i> Discord Active</button>
-            </div>
         </div>
 
         <!-- Table -->
@@ -378,7 +242,6 @@
                         <th style="width: 130px;">Pos</th>
                         <th style="width: 160px;">Value</th>
                         <th style="width: 140px;">Status</th>
-                        <th style="width: 70px;">Action</th>
                     </tr>
                 </thead>
                 <tbody id="player-table-body">
@@ -388,20 +251,11 @@
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="toast hidden">
-        <i class="fa-solid fa-circle-check"></i> <span id="toast-msg">Data synced live for all leaders!</span>
-    </div>
-
     <script>
         let players = [];
-        let isFocusedOnInput = false;
 
         async function fetchSharedPlayers() {
-            if (isFocusedOnInput) return; // Don't interrupt active typing
-
             try {
-                // Fetch from static shared_market.json (GitHub Pages compatible) or local backend
                 const res = await fetch('shared_market.json?v=' + Date.now());
                 if (res.ok) {
                     const data = await res.json();
@@ -417,7 +271,7 @@
 
         function formatDisplayPrice(price) {
             let p = Number(price) || 0;
-            if (p < 1000) return p; // Already in millions
+            if (p < 1000) return p.toFixed(1); // Already in millions
             return (p / 1000000).toFixed(1);
         }
 
@@ -438,40 +292,18 @@
                 p.num = index + 1; // Re-index dynamically
                 
                 const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td class="player-num">${p.num}</td>
+                tr.innerHTML = \`
+                    <td class="player-num">\${p.num}</td>
+                    <td><strong>\${p.name || ''}</strong></td>
+                    <td>\${p.club || 'Free Agent'}</td>
+                    <td>\${p.pos || 'N/A'}</td>
+                    <td class="price-text">€\${formatDisplayPrice(p.price)}M</td>
                     <td>
-                        <input type="text" class="table-input" value="${p.name || ''}" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'name', this.value)">
+                        <span style="color: \${p.status === 'Signed' ? 'var(--text-main)' : 'var(--text-muted)'}">
+                            \${p.status || 'Free Agent'}
+                        </span>
                     </td>
-                    <td>
-                        <input type="text" class="table-input" value="${p.club || 'Free Agent'}" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'club', this.value)">
-                    </td>
-                    <td>
-                        <select class="table-select" onchange="updatePlayer(${p.id}, 'pos', this.value)">
-                            <option value="ST" ${p.pos === 'ST' ? 'selected' : ''}>ST (Striker)</option>
-                            <option value="CM" ${p.pos === 'CM' ? 'selected' : ''}>CM (Midfielder)</option>
-                            <option value="CB" ${p.pos === 'CB' ? 'selected' : ''}>CB (Defender)</option>
-                            <option value="GK" ${p.pos === 'GK' ? 'selected' : ''}>GK (Goalkeeper)</option>
-                            <option value="DM" ${p.pos === 'DM' ? 'selected' : ''}>DM (Def Mid)</option>
-                        </select>
-                    </td>
-                    <td>
-                        <div class="price-input-wrapper">
-                            <span class="price-currency">€</span>
-                            <input type="number" class="table-input" value="${formatDisplayPrice(p.price)}" min="0" step="0.5" onfocus="isFocusedOnInput=true" onblur="isFocusedOnInput=false" onchange="updatePlayer(${p.id}, 'price', this.value)">
-                            <span class="price-currency" style="padding-right: 8px;">M</span>
-                        </div>
-                    </td>
-                    <td>
-                        <select class="table-select" onchange="updatePlayer(${p.id}, 'status', this.value)">
-                            <option value="Signed" ${p.status === 'Signed' ? 'selected' : ''}>Signed</option>
-                            <option value="Free Agent" ${p.status === 'Free Agent' ? 'selected' : ''}>Free Agent</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="btn btn-danger-sm" onclick="removePlayer(${p.id})"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
+                \`;
                 tbody.appendChild(tr);
             });
 
@@ -479,75 +311,7 @@
             document.getElementById("total-market-value").textContent = "€" + totalValue.toFixed(1) + "M";
         }
 
-        async function updatePlayer(id, key, val) {
-            const p = players.find(x => x.id === id);
-            if (p) {
-                p[key] = key === 'price' ? Number(val) : val;
-                if (key === 'club') {
-                    p.status = val.toLowerCase().includes("free") ? "Free Agent" : "Signed";
-                }
-                await syncToBackend();
-            }
-        }
-
-        async function addNewPlayer() {
-            const newId = players.length > 0 ? Math.max(...players.map(p => p.id || 0)) + 1 : 1;
-            const newPlayer = {
-                id: newId,
-                num: players.length + 1,
-                name: `New Player ${players.length + 1}`,
-                club: "Free Agent",
-                pos: "CM",
-                price: 5.0,
-                status: "Free Agent"
-            };
-            players.push(newPlayer);
-            renderTable(document.getElementById("search-input").value);
-            await syncToBackend();
-            showToast(`Added Player #${players.length}! Total players: ${players.length}`);
-        }
-
-        async function removePlayer(id) {
-            if (confirm("Are you sure you want to remove this player?")) {
-                players = players.filter(p => p.id !== id);
-                renderTable(document.getElementById("search-input").value);
-                await syncToBackend();
-                showToast("Player removed!");
-            }
-        }
-
-        async function syncToBackend() {
-            const passcode = document.getElementById("leader-passcode").value;
-            try {
-                const res = await fetch('/api/players/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ passcode, players })
-                });
-
-                if (res.ok) {
-                    showToast("⚡ Real-time edit synced for all 3 Leaders!");
-                } else {
-                    showToast("⚡ HTML synced locally!");
-                }
-            } catch (err) {
-                console.log("Error syncing:", err);
-            }
-        }
-
-        document.getElementById("add-player-btn").addEventListener("click", addNewPlayer);
         document.getElementById("search-input").addEventListener("input", (e) => renderTable(e.target.value));
-        document.getElementById("save-sync-btn").addEventListener("click", syncToBackend);
-        document.getElementById("discord-publish-btn").addEventListener("click", () => {
-            showToast("🚀 Roster updated! Type !market in Discord to print!");
-        });
-
-        function showToast(msg) {
-            const toast = document.getElementById("toast");
-            document.getElementById("toast-msg").textContent = msg;
-            toast.classList.remove("hidden");
-            setTimeout(() => toast.classList.add("hidden"), 3500);
-        }
 
         fetchSharedPlayers();
         setInterval(fetchSharedPlayers, 3000);

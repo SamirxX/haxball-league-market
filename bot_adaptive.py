@@ -31,11 +31,9 @@ def load_shared_market():
     return []
 
 def save_shared_market(data):
-    global last_file_mtime
     try:
         with open(SHARED_MARKET_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        last_file_mtime = os.path.getmtime(SHARED_MARKET_FILE)
     except Exception as e:
         print("Error saving shared_market.json:", e)
 
@@ -100,23 +98,29 @@ def build_market_embeds():
         embeds.append(embed)
     return embeds
 
+async def deduplicate_and_edit_channel(guild, possible_names, target_name, target_category):
+    found_channels = [ch for ch in guild.text_channels if ch.name in possible_names]
+    if not found_channels:
+        return None
+    main_ch = found_channels[0]
+    for duplicate in found_channels[1:]:
+        try:
+            await duplicate.delete()
+        except Exception:
+            pass
+    if main_ch.name != target_name or (target_category and main_ch.category != target_category):
+        await main_ch.edit(name=target_name, category=target_category)
+    return main_ch
+
 async def update_unified_market_channel(guild):
     transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
-    
-    # Stylized market channel name
-    market_ch = discord.utils.get(guild.text_channels, name="『🛒』transfer-market") or \
-                discord.utils.get(guild.text_channels, name="『🛒』market") or \
-                discord.utils.get(guild.text_channels, name="market")
+    market_ch = await deduplicate_and_edit_channel(guild, ["『🛒』transfer-market", "『🛒』market", "market", "transfer-market"], "『🛒』transfer-market", transfer_cat)
     
     if not market_ch:
         market_ch = await guild.create_text_channel("『🛒』transfer-market", category=transfer_cat)
-    else:
-        if market_ch.name != "『🛒』transfer-market" or (transfer_cat and market_ch.category != transfer_cat):
-            await market_ch.edit(name="『🛒』transfer-market", category=transfer_cat)
 
     embeds = build_market_embeds()
 
-    # Clean old bot messages
     async for msg in market_ch.history(limit=20):
         if msg.author == bot.user:
             try:
@@ -130,40 +134,16 @@ async def update_unified_market_channel(guild):
     for emb in embeds:
         await market_ch.send(embed=emb)
 
-@tasks.loop(seconds=3)
-async def check_file_changes_and_sync():
-    global last_file_mtime
-    if os.path.exists(SHARED_MARKET_FILE):
-        current_mtime = os.path.getmtime(SHARED_MARKET_FILE)
-        if last_file_mtime == 0:
-            last_file_mtime = current_mtime
-        elif current_mtime > last_file_mtime:
-            print("⚡ Detected file update (HTML/Backend edit)! Syncing Discord market...", flush=True)
-            last_file_mtime = current_mtime
-            for g in bot.guilds:
-                try:
-                    await update_unified_market_channel(g)
-                except Exception as e:
-                    print("Error auto-syncing Discord:", e)
-
 async def organize_server_structure(guild):
     general_cat = discord.utils.get(guild.categories, name="▬▬▬ General ▬▬▬")
     transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
     league_cat = discord.utils.get(guild.categories, name="▬▬▬ Premier League ▬▬▬")
 
-    welcome_ch = discord.utils.get(guild.text_channels, name="『👋』welcome") or discord.utils.get(guild.text_channels, name="welcome")
-    if welcome_ch and general_cat and welcome_ch.category != general_cat:
-        await welcome_ch.edit(name="『👋』welcome", category=general_cat)
+    await deduplicate_and_edit_channel(guild, ["『👋』welcome", "welcome"], "『👋』welcome", general_cat)
+    await deduplicate_and_edit_channel(guild, ["『👀』roles", "roles"], "『👀』roles", general_cat)
+    await deduplicate_and_edit_channel(guild, ["『🛡️』teams", "teams"], "『🛡️』teams", league_cat)
 
-    roles_ch = discord.utils.get(guild.text_channels, name="『👀』roles") or discord.utils.get(guild.text_channels, name="roles")
-    if roles_ch and general_cat and roles_ch.category != general_cat:
-        await roles_ch.edit(name="『👀』roles", category=general_cat)
-
-    teams_ch = discord.utils.get(guild.text_channels, name="『🛡️』teams") or discord.utils.get(guild.text_channels, name="teams")
-    if teams_ch and league_cat and teams_ch.category != league_cat:
-        await teams_ch.edit(name="『🛡️』teams", category=league_cat)
-
-    results_ch = discord.utils.get(guild.text_channels, name="『📈』results") or discord.utils.get(guild.text_channels, name="results")
+    results_ch = await deduplicate_and_edit_channel(guild, ["『📈』results", "results"], "『📈』results", league_cat)
     if results_ch:
         async for msg in results_ch.history(limit=5):
             if msg.author == bot.user:
@@ -203,15 +183,18 @@ async def setup_leader_headquarters(guild):
     else:
         embed = discord.Embed(
             title="👑 **OFFICIAL LEADER & ADMIN COMMANDS MANUAL**",
-            description="Use these commands in `#leader-commands` or edit the HTML page. All changes automatically update `#『🛒』transfer-market`!",
+            description="Use these commands in `#leader-commands`. All changes automatically update `#『🛒』transfer-market`!",
             color=0x9B59B6
         )
         embed.add_field(name="1️⃣ `!addplayer <Name> <Pos> <Club> <PriceInM>`", value="Add a player. Example: `!addplayer Ronaldo ST Zamalek 15`", inline=False)
         embed.add_field(name="2️⃣ `!setprice <PlayerName> <NewPriceInM>`", value="Update player price. Example: `!setprice ibra 20`", inline=False)
         embed.add_field(name="3️⃣ `!setclub <PlayerName> <NewClub>`", value="Transfer player to club. Example: `!setclub Messi Petrojet`", inline=False)
-        embed.add_field(name="4️⃣ `!createteam <TeamName> <Captain>`", value="Create team, role, private team chat, and post announcement!", inline=False)
-        embed.add_field(name="5️⃣ `!market`", value="Manually print current market table.", inline=False)
-        embed.set_footer(text="Leader Passcode Key for Web Page: PRIM-LEADER-2026")
+        embed.add_field(name="4️⃣ `!setname <OldName> <NewName>`", value="Rename a player. Example: `!setname ibra Zlatan`", inline=False)
+        embed.add_field(name="5️⃣ `!setpos <PlayerName> <NewPos>`", value="Change player position. Example: `!setpos Messi CAM`", inline=False)
+        embed.add_field(name="6️⃣ `!setstatus <PlayerName> <Status>`", value="Change player status. Example: `!setstatus Messi Signed`", inline=False)
+        embed.add_field(name="7️⃣ `!removeplayer <PlayerName>`", value="Remove player from market. Example: `!removeplayer Ronaldo`", inline=False)
+        embed.add_field(name="8️⃣ `!createteam <TeamName> <Captain>`", value="Create team, role, private team chat, and post announcement!", inline=False)
+        embed.add_field(name="9️⃣ `!market`", value="Manually print current market table.", inline=False)
         await guide_ch.send(embed=embed)
 
 POSITIONS_CONFIG = {
@@ -281,8 +264,6 @@ async def on_ready():
         await setup_leader_headquarters(g)
         await setup_roles_and_teams(g)
         await update_unified_market_channel(g)
-    if not check_file_changes_and_sync.is_running():
-        check_file_changes_and_sync.start()
     print("✅ Initialization complete!", flush=True)
 
 @bot.event
@@ -409,6 +390,63 @@ async def set_club(ctx, name: str, *, new_club: str):
     if found:
         save_shared_market(players)
         await ctx.send(f"✅ Transferred **{name}** to **{new_club}**!")
+        await update_unified_market_channel(ctx.guild)
+    else:
+        await ctx.send(f"❌ Player **{name}** not found.")
+
+@bot.command(name='setname')
+async def set_name(ctx, old_name: str, new_name: str):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only League Leaders / Admins can edit the market!")
+        return
+    players = load_shared_market()
+    found = False
+    for p in players:
+        if p.get("name", "").lower() == old_name.lower():
+            p["name"] = new_name
+            found = True
+            break
+    if found:
+        save_shared_market(players)
+        await ctx.send(f"✅ Renamed **{old_name}** to **{new_name}**!")
+        await update_unified_market_channel(ctx.guild)
+    else:
+        await ctx.send(f"❌ Player **{old_name}** not found.")
+
+@bot.command(name='setpos', aliases=['setposition'])
+async def set_pos(ctx, name: str, new_pos: str):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only League Leaders / Admins can edit the market!")
+        return
+    players = load_shared_market()
+    found = False
+    for p in players:
+        if p.get("name", "").lower() == name.lower():
+            p["pos"] = new_pos.upper()
+            found = True
+            break
+    if found:
+        save_shared_market(players)
+        await ctx.send(f"✅ Changed **{name}**'s position to **{new_pos.upper()}**!")
+        await update_unified_market_channel(ctx.guild)
+    else:
+        await ctx.send(f"❌ Player **{name}** not found.")
+
+@bot.command(name='setstatus')
+async def set_status(ctx, name: str, *, new_status: str):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only League Leaders / Admins can edit the market!")
+        return
+    players = load_shared_market()
+    found = False
+    for p in players:
+        if p.get("name", "").lower() == name.lower():
+            p["status"] = new_status
+            found = True
+            break
+    if found:
+        save_shared_market(players)
+        await ctx.send(f"✅ Updated **{name}**'s status to **{new_status}**!")
         await update_unified_market_channel(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
