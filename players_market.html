@@ -293,14 +293,14 @@
                 
                 const tr = document.createElement("tr");
                 tr.innerHTML = \`
-                    <td class="player-num">\${p.num}</td>
-                    <td><strong>\${p.name || ''}</strong></td>
-                    <td>\${p.club || 'Free Agent'}</td>
-                    <td>\${p.pos || 'N/A'}</td>
-                    <td class="price-text">€\${formatDisplayPrice(p.price)}M</td>
+                    <td class="player-num">${p.num}</td>
+                    <td><strong>${p.name || ''}</strong></td>
+                    <td>${p.club || 'Free Agent'}</td>
+                    <td>${p.pos || 'N/A'}</td>
+                    <td class="price-text">€${formatDisplayPrice(p.price)}M</td>
                     <td>
-                        <span style="color: \${p.status === 'Signed' ? 'var(--text-main)' : 'var(--text-muted)'}">
-                            \${p.status || 'Free Agent'}
+                        <span style="color: ${p.status === 'Signed' ? 'var(--text-main)' : 'var(--text-muted)'}">
+                            ${p.status || 'Free Agent'}
                         </span>
                     </td>
                 \`;
