@@ -98,27 +98,37 @@ def build_market_embeds():
         embeds.append(embed)
     return embeds
 
-async def deduplicate_and_edit_channel(guild, possible_names, target_name, target_category):
-    found_channels = [ch for ch in guild.text_channels if ch.name in possible_names]
+async def deduplicate_and_edit_channel(guild, keywords, exclude_keywords, target_name, target_category):
+    found_channels = []
+    for ch in guild.text_channels:
+        ch_name_lower = ch.name.lower()
+        if any(k in ch_name_lower for k in keywords) and not any(ek in ch_name_lower for ek in exclude_keywords):
+            found_channels.append(ch)
+
     if not found_channels:
-        return None
+        return await guild.create_text_channel(target_name, category=target_category)
+
     main_ch = found_channels[0]
     for duplicate in found_channels[1:]:
         try:
             await duplicate.delete()
         except Exception:
             pass
+
     if main_ch.name != target_name or (target_category and main_ch.category != target_category):
-        await main_ch.edit(name=target_name, category=target_category)
+        try:
+            await main_ch.edit(name=target_name, category=target_category)
+        except Exception:
+            pass
     return main_ch
 
 async def update_unified_market_channel(guild):
     transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
-    market_ch = await deduplicate_and_edit_channel(guild, ["『🛒』transfer-market", "『🛒』market", "market", "transfer-market"], "『🛒』transfer-market", transfer_cat)
+    if not transfer_cat:
+        transfer_cat = await guild.create_category("▬▬▬ Transfer Hub ▬▬▬")
+        
+    market_ch = await deduplicate_and_edit_channel(guild, ["market"], ["black", "marketing", "rules"], "『🛒』transfer-market", transfer_cat)
     
-    if not market_ch:
-        market_ch = await guild.create_text_channel("『🛒』transfer-market", category=transfer_cat)
-
     embeds = build_market_embeds()
 
     async for msg in market_ch.history(limit=20):
@@ -136,14 +146,31 @@ async def update_unified_market_channel(guild):
 
 async def organize_server_structure(guild):
     general_cat = discord.utils.get(guild.categories, name="▬▬▬ General ▬▬▬")
+    if not general_cat: general_cat = await guild.create_category("▬▬▬ General ▬▬▬")
+        
     transfer_cat = discord.utils.get(guild.categories, name="▬▬▬ Transfer Hub ▬▬▬")
+    if not transfer_cat: transfer_cat = await guild.create_category("▬▬▬ Transfer Hub ▬▬▬")
+        
     league_cat = discord.utils.get(guild.categories, name="▬▬▬ Premier League ▬▬▬")
+    if not league_cat: league_cat = await guild.create_category("▬▬▬ Premier League ▬▬▬")
 
-    await deduplicate_and_edit_channel(guild, ["『👋』welcome", "welcome"], "『👋』welcome", general_cat)
-    await deduplicate_and_edit_channel(guild, ["『👀』roles", "roles"], "『👀』roles", general_cat)
-    await deduplicate_and_edit_channel(guild, ["『🛡️』teams", "teams"], "『🛡️』teams", league_cat)
+    # General
+    await deduplicate_and_edit_channel(guild, ["welcome"], [], "『👋』welcome", general_cat)
+    await deduplicate_and_edit_channel(guild, ["roles"], ["rules"], "『👀』roles", general_cat)
+    await deduplicate_and_edit_channel(guild, ["announcement"], [], "『📌』announcements", general_cat)
+    await deduplicate_and_edit_channel(guild, ["rule"], ["transfer"], "『📜』rules", general_cat)
 
-    results_ch = await deduplicate_and_edit_channel(guild, ["『📈』results", "results"], "『📈』results", league_cat)
+    # Premier League
+    await deduplicate_and_edit_channel(guild, ["team"], ["search", "free", "registration", "roles"], "『🛡️』teams", league_cat)
+    results_ch = await deduplicate_and_edit_channel(guild, ["result", "fixture"], [], "『📈』results", league_cat)
+    await deduplicate_and_edit_channel(guild, ["standing", "leaderboard"], [], "『📊』standings", league_cat)
+
+    # Transfer Hub (market is handled in update_unified_market_channel)
+    await deduplicate_and_edit_channel(guild, ["transfer-rule", "transfer_rule"], [], "『📕』transfer-rules", transfer_cat)
+    await deduplicate_and_edit_channel(guild, ["search-for", "free-agent"], [], "『👤』search-for-teams", transfer_cat)
+    await deduplicate_and_edit_channel(guild, ["transfer"], ["market", "rule"], "『🎯』transfers", transfer_cat)
+    await deduplicate_and_edit_channel(guild, ["signing"], [], "『📄』signings", transfer_cat)
+
     if results_ch:
         async for msg in results_ch.history(limit=5):
             if msg.author == bot.user:
