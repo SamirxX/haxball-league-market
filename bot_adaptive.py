@@ -4,7 +4,8 @@ import json
 import datetime
 import os
 import sys
-
+from github import Github
+import asyncio
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
@@ -17,6 +18,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 SHARED_MARKET_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shared_market.json')
 GITHUB_PAGES_URL = "https://samirxx.github.io/haxball-league-market/players_market.html"
+GITHUB_REPO = "SamirxX/haxball-league-market"
 
 # Track file last modified time for auto-syncing HTML -> Discord
 last_file_mtime = 0
@@ -32,10 +34,29 @@ def load_shared_market():
 
 def save_shared_market(data):
     try:
+        json_content = json.dumps(data, indent=2, ensure_ascii=False)
         with open(SHARED_MARKET_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.write(json_content)
+            
+        # Background sync to GitHub if token is present
+        gh_token = os.environ.get("GITHUB_TOKEN")
+        if gh_token:
+            asyncio.create_task(sync_to_github(json_content, gh_token))
+            
     except Exception as e:
         print("Error saving shared_market.json:", e)
+
+async def sync_to_github(json_content, token):
+    try:
+        g = Github(token)
+        repo = g.get_repo(GITHUB_REPO)
+        contents = repo.get_contents(SHARED_MARKET_FILE)
+        # We need to run blocking PyGithub calls in executor, but for simplicity here we just call it
+        # as it's a small file and not frequently updated
+        repo.update_file(contents.path, "Bot auto-update market data", json_content, contents.sha)
+        print("✅ Synced shared_market.json to GitHub successfully!", flush=True)
+    except Exception as e:
+        print(f"❌ Error syncing to GitHub: {e}", flush=True)
 
 def format_price(raw_price):
     p = float(raw_price)
@@ -210,7 +231,7 @@ async def setup_leader_headquarters(guild):
     else:
         embed = discord.Embed(
             title="👑 **OFFICIAL LEADER & ADMIN COMMANDS MANUAL**",
-            description="Use these commands in `#leader-commands`. All changes automatically update `#『🛒』transfer-market`!",
+            description="Use these commands in `#leader-commands`. All changes automatically update `#『🛒』transfer-market` and your GitHub website!",
             color=0x9B59B6
         )
         embed.add_field(name="1️⃣ `!addplayer <Name> <Pos> <Club> <PriceInM>`", value="Add a player. Example: `!addplayer Ronaldo ST Zamalek 15`", inline=False)
@@ -220,8 +241,9 @@ async def setup_leader_headquarters(guild):
         embed.add_field(name="5️⃣ `!setpos <PlayerName> <NewPos>`", value="Change player position. Example: `!setpos Messi CAM`", inline=False)
         embed.add_field(name="6️⃣ `!setstatus <PlayerName> <Status>`", value="Change player status. Example: `!setstatus Messi Signed`", inline=False)
         embed.add_field(name="7️⃣ `!removeplayer <PlayerName>`", value="Remove player from market. Example: `!removeplayer Ronaldo`", inline=False)
-        embed.add_field(name="8️⃣ `!createteam <TeamName> <Captain>`", value="Create team, role, private team chat, and post announcement!", inline=False)
-        embed.add_field(name="9️⃣ `!market`", value="Manually print current market table.", inline=False)
+        embed.add_field(name="8️⃣ `!editplayer <PlayerName> <Column> <NewValue>`", value="Universal edit. Columns: name, pos, club, price, status. Example: `!editplayer ibra price 50`", inline=False)
+        embed.add_field(name="9️⃣ `!clearmarket`", value="Wipe ALL players from the market.", inline=False)
+        embed.add_field(name="🔟 `!createteam <TeamName> <Captain>`", value="Create team, role, private team chat, and post announcement!", inline=False)
         await guide_ch.send(embed=embed)
 
 POSITIONS_CONFIG = {
@@ -492,6 +514,64 @@ async def remove_player(ctx, *, name: str):
         await update_unified_market_channel(ctx.guild)
     else:
         await ctx.send(f"❌ Player **{name}** not found.")
+
+@bot.command(name='editplayer')
+async def edit_player(ctx, name: str, column: str, *, new_value: str):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only League Leaders / Admins can edit the market!")
+        return
+    players = load_shared_market()
+    found = False
+    col_lower = column.lower()
+    valid_cols = ["name", "pos", "club", "price", "status"]
+    
+    if col_lower not in valid_cols:
+        await ctx.send(f"❌ Invalid column! Valid columns are: {', '.join(valid_cols)}")
+        return
+        
+    for p in players:
+        if p.get("name", "").lower() == name.lower():
+            if col_lower == "price":
+                try:
+                    val = float(new_value)
+                    p["price"] = val if val < 1000 else (val * 1000000)
+                except ValueError:
+                    await ctx.send("❌ Price must be a number!")
+                    return
+            elif col_lower == "pos":
+                p["pos"] = new_value.upper()
+            else:
+                p[col_lower] = new_value
+            found = True
+            break
+            
+    if found:
+        save_shared_market(players)
+        await ctx.send(f"✅ Updated **{name}**'s {column} to **{new_value}**!")
+        await update_unified_market_channel(ctx.guild)
+    else:
+        await ctx.send(f"❌ Player **{name}** not found.")
+
+@bot.command(name='clearmarket')
+async def clear_market(ctx):
+    if not is_leader(ctx.author):
+        await ctx.send("❌ Only League Leaders / Admins can edit the market!")
+        return
+        
+    await ctx.send("⚠️ Are you sure you want to WIPE the entire market? Type `confirm` within 10 seconds.")
+    
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel and m.content.lower() == 'confirm'
+        
+    try:
+        await bot.wait_for('message', check=check, timeout=10.0)
+    except asyncio.TimeoutError:
+        await ctx.send("❌ Market clear cancelled.")
+        return
+        
+    save_shared_market([])
+    await ctx.send("🛑 **MARKET CLEARED SUCCESSFULLY.**")
+    await update_unified_market_channel(ctx.guild)
 
 if __name__ == "__main__":
     TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
